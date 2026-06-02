@@ -4,84 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Parallel & Perpendicular Lines</title>
-    <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f4f7f6;
-            margin: 0;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-        h1 {
-            color: #2c3e50;
-            margin-top: 0;
-        }
-        .container {
-            display: flex;
-            gap: 30px;
-            background: white;
-            padding: 20px;
-            border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-            max-width: 900px;
-            flex-wrap: wrap;
-            justify-content: center;
-        }
-        canvas {
-            background-color: #ffffff;
-            border: 2px solid #bdc3c7;
-            border-radius: 8px;
-            cursor: grab;
-        }
-        canvas:active {
-            cursor: grabbing;
-        }
-        .controls {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-            min-width: 250px;
-        }
-        .panel {
-            background: #ecf0f1;
-            padding: 15px;
-            border-radius: 8px;
-        }
-        button {
-            background-color: #3498db;
-            color: white;
-            border: none;
-            padding: 12px 20px;
-            font-size: 16px;
-            font-weight: bold;
-            border-radius: 6px;
-            cursor: pointer;
-            transition: background 0.2s;
-        }
-        button:hover {
-            background-color: #2980b9;
-        }
-        .instructions {
-            font-size: 14px;
-            color: #555;
-            line-height: 1.5;
-        }
-        .math {
-            font-size: 18px;
-            color: #2c3e50;
-        }
-        .math span.blue { color: #2980b9; font-weight: bold; }
-        .math span.red { color: #c0392b; font-weight: bold; }
-    </style>
+    <link rel="stylesheet" href="../style.css">
 </head>
 <body>
-
-    <h1>Line Relationships Interactive Demo</h1>
-
-    <div class="container">
-        <canvas id="mathCanvas" width="500" height="500"></canvas>
+    <div id="container">
+        <h2>A Demo on Parallel & Perpendicular Lines</h2>
+        <canvas id="parallel_perpendicular_canva" width="600" height="400"></canvas>
 
         <div class="controls">
             <button id="toggleBtn">Switch to Perpendicular</button>
@@ -99,7 +27,7 @@
     </div>
 
     <script>
-        const canvas = document.getElementById('mathCanvas');
+        const canvas = document.getElementById('parallel_perpendicular_canva');
         const ctx = canvas.getContext('2d');
         const toggleBtn = document.getElementById('toggleBtn');
         const mathOutput = document.getElementById('mathOutput');
