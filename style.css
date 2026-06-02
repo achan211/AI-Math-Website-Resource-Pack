@@ -23,6 +23,8 @@
 
         header {
             margin-bottom: 40px;
+            justify-content: center;
+            align-items: center;
         }
 
         h1 {
@@ -46,42 +48,50 @@
             width: 650px;
         }
 
+        /* The Grid ONLY contains the links now */
         .doorway-grid {
             display: grid;
             grid-template-columns: 1fr;
             gap: 15px;
+            margin-bottom: 30px;
         }
-        /* Changes to 2 columns on larger screens */
+
+        /* 2 equal columns on screens wider than mobile */
         @media (min-width: 480px) {
             .doorway-grid {
                 grid-template-columns: repeat(2, 1fr);
             }
         }
+
         .door-link {
-            display: block;
-            padding: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 18px 10px;
             background-color: #ffffff;
-            color: #2980b9;
+            color: #1e70bf;
             text-decoration: none;
             border-radius: 8px;
             font-weight: bold;
-            font-size: 1.2rem;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            font-size: 1.1rem;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.02);
             transition: all 0.2s ease-in-out;
             border: 1px solid #e2e8f0;
         }
 
         .door-link:hover {
-            background-color: #2980b9;
+            background-color: #1e70bf;
             color: #ffffff;
             transform: translateY(-2px);
-            box-shadow: 0 6px 12px rgba(41, 128, 185, 0.2);
+            box-shadow: 0 5px 12px rgba(30, 112, 191, 0.2);
         }
 
+        /* Footer sits safely below the grid */
         footer {
-            margin-top: 40px;
             font-size: 0.9rem;
-            color: #bdc3c7;
+            color: #94a3b8;
+            border-top: 1px solid #f1f5f9;
+            padding-top: 20px;
         }
 
         canvas { border: 2px solid #2c3e50; border-radius: 4px; background-color: #ffffff; cursor: crosshair; }
