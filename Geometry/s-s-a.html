@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Why ASS is Not a Congruence Criterion</title>
+    <link rel="stylesheet" href="../style.css">
+    <style>
+        /* --- CUSTOM ADDITIONS FOR SLIDER --- */
+        .slider-container {
+            margin-top: 15px;
+        }
+        input[type=range] {
+            width: 100%;
+            margin-top: 10px;
+        }
+        .btn-container { margin-top: 15px; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <canvas id="mathCanvas" width="550" height="400"></canvas>
+
+        <div class="controls">
+            <div class="panel">
+                <h2>The Ambiguous Case</h2>
+                <p class="instructions">
+                    <strong>1.</strong> Drag point <strong><em>C</em></strong> to change the Fixed Angle and Side.<br>
+                    <strong>2.</strong> Use the slider to set the length of the swinging Side (<strong><em>a</em></strong>).<br>
+                    <strong>3.</strong> Drag point <strong><em>B₂</em></strong> along its circular path to see how it can hit the baseline in a completely different spot!
+                </p>
+                <div class="slider-container">
+                    <label for="sideASlider">Length of Side <strong><em>a</em></strong>: <span id="sideAVal">200</span></label>
+                    <input type="range" id="sideASlider" min="50" max="350" value="200">
+                </div>
+                <div class="btn-container">
+                    <button id="restoreBtn" class="clear-btn" style="width: 100%;">Restore B₂ to B₁</button>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="math">
+                    <p>Possible Triangles: <span id="triCount" class="blue">0</span></p>
+                    <hr style="margin: 10px 0; border: 0; border-top: 1px solid #bdc3c7;">
+                    <p id="explanation" style="min-height: 80px;"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('mathCanvas');
+        const ctx = canvas.getContext('2d');
+        const sideASlider = document.getElementById('sideASlider');
+        const sideAValDisplay = document.getElementById('sideAVal');
+        const triCountDisplay = document.getElementById('triCount');
+        const explanationDisplay = document.getElementById('explanation');
+        const restoreBtn = document.getElementById('restoreBtn');
+
+        // State variables
+        const A = { x: 50, y: 320 }; 
+        let C = { x: 220, y: 120 };  
+        let radiusA = parseInt(sideASlider.value); 
+        
+        // Interaction variables
+        let isDraggingC = false;
+        let isDraggingB2 = false;
+        let b2Detached = false; // Tracks if user has moved B2 away from B1
+        let angleB2 = 0;        // Current rotation angle of B2 around C
+        let currentB2 = null;   // The calculated (x,y) of B2
+
+        // Event Listeners for Interaction
+        canvas.addEventListener('mousedown', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+
+            // Priority 1: Check B2 drag
+            if (currentB2) {
+                const distB2 = Math.hypot(mouseX - currentB2.x, mouseY - currentB2.y);
+                if (distB2 < 15) {
+                    isDraggingB2 = true;
+                    b2Detached = true; 
+                    return; // Stop checking so we don't drag C simultaneously
+                }
+            }
+
+            // Priority 2: Check C drag
+            const distC = Math.hypot(mouseX - C.x, mouseY - C.y);
+            if (distC < 20) {
+                isDraggingC = true;
+            }
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+
+            if (isDraggingB2) {
+                // Update B2 angle relative to C
+                angleB2 = Math.atan2(mouseY - C.y, mouseX - C.x);
+                draw();
+            } else if (isDraggingC) {
+                // Update C position
+                C.x = mouseX;
+                C.y = mouseY;
+                // Keep C in bounds
+                C.x = Math.max(50, Math.min(C.x, canvas.width - 50));
+                C.y = Math.max(30, Math.min(C.y, A.y - 20));
+                draw();
+            }
+        });
+
+        canvas.addEventListener('mouseup', () => { 
+            isDraggingC = false; 
+            isDraggingB2 = false; 
+        });
+        canvas.addEventListener('mouseleave', () => { 
+            isDraggingC = false; 
+            isDraggingB2 = false; 
+        });
+
+        // Slider Event
+        sideASlider.addEventListener('input', (e) => {
+            radiusA = parseInt(e.target.value);
+            sideAValDisplay.textContent = radiusA;
+            draw();
+        });
+
+        // Restore Button Event
+        restoreBtn.addEventListener('click', () => {
+            b2Detached = false;
+            draw();
+        });
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // 1. Draw baseline
+            ctx.beginPath();
+            ctx.moveTo(A.x, A.y);
+            ctx.lineTo(canvas.width, A.y);
+            ctx.strokeStyle = '#7f8c8d';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // 2. Draw Angle arc at A
+            const angle = Math.atan2(C.y - A.y, C.x - A.x);
+            ctx.beginPath();
+            ctx.arc(A.x, A.y, 40, 0, angle, true);
+            ctx.fillStyle = 'rgba(46, 204, 113, 0.3)';
+            ctx.fill();
+            ctx.strokeStyle = '#27ae60';
+            ctx.stroke();
+
+            // 3. Draw Fixed Side 'b' (A to C)
+            ctx.beginPath();
+            ctx.moveTo(A.x, A.y);
+            ctx.lineTo(C.x, C.y);
+            ctx.strokeStyle = '#2c3e50';
+            ctx.lineWidth = 4;
+            ctx.stroke();
+
+            // 4. Draw swinging circle
+            ctx.beginPath();
+            ctx.arc(C.x, C.y, radiusA, 0, Math.PI * 2);
+            ctx.strokeStyle = 'rgba(189, 195, 199, 0.6)';
+            ctx.setLineDash([5, 5]);
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            ctx.setLineDash([]); 
+
+            // 5. Calculate Intersections
+            const dy = A.y - C.y;
+            const dxSq = radiusA * radiusA - dy * dy;
+            let intersections = [];
+            
+            if (dxSq >= 0) {
+                const dx = Math.sqrt(dxSq);
+                const x1 = C.x + dx;
+                const x2 = C.x - dx;
+                if (x1 > A.x) intersections.push({ x: x1, y: A.y });
+                if (x2 > A.x && Math.abs(x1 - x2) > 0.5) intersections.push({ x: x2, y: A.y });
+            }
+
+            // Sort so the right-most point (larger triangle) is always B1 (index 0)
+            intersections.sort((a, b) => b.x - a.x);
+
+            if (intersections.length === 0) {
+                currentB2 = null;
+                triCountDisplay.textContent = "0";
+                triCountDisplay.className = "red";
+                explanationDisplay.innerHTML = "Side <strong><em>a</em></strong> is too short to reach the baseline. No triangle can be formed.";
+            } else {
+                let B1 = intersections[0];
+
+                // If B2 hasn't been detached by the user, clamp it to B1
+                if (!b2Detached) {
+                    angleB2 = Math.atan2(B1.y - C.y, B1.x - C.x);
+                }
+
+                // Calculate B2's actual physical coordinate on the circle
+                currentB2 = {
+                    x: C.x + radiusA * Math.cos(angleB2),
+                    y: C.y + radiusA * Math.sin(angleB2)
+                };
+
+                // Explain what's happening based on baseline hits
+                if (intersections.length === 1) {
+                    triCountDisplay.textContent = "1";
+                    triCountDisplay.className = "";
+                    explanationDisplay.innerHTML = "Exactly 1 triangle possible. (Side <strong><em>a</em></strong> hits the baseline at exactly a right angle).";
+                } else if (intersections.length === 2) {
+                    triCountDisplay.textContent = "2 (Ambiguous!)";
+                    triCountDisplay.className = "red";
+                    explanationDisplay.innerHTML = "Notice how swinging <strong><em>B₂</em></strong> finds a second valid spot on the baseline. <span class='red'>Two completely different triangles</span> share the exact same Angle-Side-Side!";
+                }
+
+                // Draw Triangle 1 (Fixed to B1)
+                drawTriangle(A, C, B1, 'rgba(52, 152, 219, 0.2)', '#2980b9');
+                
+                // Draw Triangle 2 (Swinging with B2)
+                drawTriangle(A, C, currentB2, 'rgba(231, 76, 60, 0.4)', '#c0392b');
+
+                // Draw points
+                drawPoint(B1, 'B₁', false);
+                drawPoint(currentB2, 'B₂', true); 
+            }
+
+            // Draw A and C
+            drawPoint(A, 'A', false);
+            drawPoint(C, 'C', true); 
+        }
+
+        function drawTriangle(p1, p2, p3, fillColor, strokeColor) {
+            ctx.beginPath();
+            ctx.moveTo(p1.x, p1.y);
+            ctx.lineTo(p2.x, p2.y);
+            ctx.lineTo(p3.x, p3.y);
+            ctx.closePath();
+            ctx.fillStyle = fillColor;
+            ctx.fill();
+            ctx.strokeStyle = strokeColor;
+            ctx.lineWidth = 3;
+            ctx.stroke();
+        }
+
+        function drawPoint(p, label, isInteractive = false) {
+            ctx.beginPath();
+            // B2 gets a slightly larger radius to indicate it's draggable
+            ctx.arc(p.x, p.y, isInteractive ? 8 : 5, 0, Math.PI * 2);
+            ctx.fillStyle = isInteractive ? '#f1c40f' : '#2c3e50'; // Yellow for interactive
+            ctx.fill();
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            ctx.fillStyle = '#333';
+            // CHANGED: Added "italic" to the font style
+            ctx.font = 'italic bold 16px sans-serif';
+            let xOff = (label === 'A' || label === 'C') ? -25 : 12;
+            let yOff = (label === 'C') ? -10 : 25;
+            ctx.fillText(label, p.x + xOff, p.y + yOff);
+        }
+
+        // Initialize
+        draw();
+    </script>
+</body>
+</html>
