@@ -54,7 +54,7 @@
         /* Changes to 2 columns on larger screens */
         @media (min-width: 480px) {
             .doorway-grid {
-                grid-template-columns: repeat(3, 1fr);
+                grid-template-columns: repeat(2, 1fr);
             }
         }
         .door-link {
