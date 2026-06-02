@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Parallel & Perpendicular Lines</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f7f6;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        h1 {
+            color: #2c3e50;
+            margin-top: 0;
+        }
+        .container {
+            display: flex;
+            gap: 30px;
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            max-width: 900px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        canvas {
+            background-color: #ffffff;
+            border: 2px solid #bdc3c7;
+            border-radius: 8px;
+            cursor: grab;
+        }
+        canvas:active {
+            cursor: grabbing;
+        }
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            min-width: 250px;
+        }
+        .panel {
+            background: #ecf0f1;
+            padding: 15px;
+            border-radius: 8px;
+        }
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        .instructions {
+            font-size: 14px;
+            color: #555;
+            line-height: 1.5;
+        }
+        .math {
+            font-size: 18px;
+            color: #2c3e50;
+        }
+        .math span.blue { color: #2980b9; font-weight: bold; }
+        .math span.red { color: #c0392b; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <h1>Line Relationships Interactive Demo</h1>
+
+    <div class="container">
+        <canvas id="mathCanvas" width="500" height="500"></canvas>
+
+        <div class="controls">
+            <button id="toggleBtn">Switch to Perpendicular</button>
+            
+            <div class="panel instructions">
+                <strong>How to use:</strong><br>
+                • Drag points <strong>A</strong> or <strong>B</strong> to change the slope of Line 1.<br>
+                • Drag point <strong>C</strong> to move Line 2.<br>
+                • Line 2 will automatically adjust to remain parallel or perpendicular to Line 1.
+            </div>
+
+            <div class="panel math" id="mathOutput">
+                </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('mathCanvas');
+        const ctx = canvas.getContext('2d');
+        const toggleBtn = document.getElementById('toggleBtn');
+        const mathOutput = document.getElementById('mathOutput');
+
+        const width = canvas.width;
+        const height = canvas.height;
+        const unit = 25; // 25 pixels per grid unit
+        const originX = width / 2;
+        const originY = height / 2;
+
+        let mode = 'parallel'; // Can be 'parallel' or 'perpendicular'
+        let draggingPoint = null;
+
+        // Points defining our lines (Math coordinates)
+        let pts = {
+            A: { x: -3, y: -2, color: '#2980b9' },
+            B: { x: 3, y: 2, color: '#2980b9' },
+            C: { x: -2, y: 4, color: '#c0392b' }
+        };
+
+        // Convert Math coordinates to Canvas pixel coordinates
+        function toCanvas(x, y) {
+            return {
+                x: originX + x * unit,
+                y: originY - y * unit
+            };
+        }
+
+        // Convert Canvas pixel coordinates to Math coordinates
+        function toMath(x, y) {
+            return {
+                x: (x - originX) / unit,
+                y: (originY - y) / unit
+            };
+        }
+
+        // Handle Mode Toggle
+        toggleBtn.addEventListener('click', () => {
+            if (mode === 'parallel') {
+                mode = 'perpendicular';
+                toggleBtn.innerText = 'Switch to Parallel';
+                toggleBtn.style.backgroundColor = '#e67e22';
+            } else {
+                mode = 'parallel';
+                toggleBtn.innerText = 'Switch to Perpendicular';
+                toggleBtn.style.backgroundColor = '#3498db';
+            }
+            draw();
+        });
+
+        // Mouse Interactions
+        canvas.addEventListener('mousedown', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+            const mathPos = toMath(mouseX, mouseY);
+
+            // Check if user clicked near any point
+            for (let key in pts) {
+                let dx = pts[key].x - mathPos.x;
+                let dy = pts[key].y - mathPos.y;
+                if (Math.sqrt(dx * dx + dy * dy) < 0.6) { // Click tolerance
+                    draggingPoint = key;
+                    break;
+                }
+            }
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            if (draggingPoint) {
+                const rect = canvas.getBoundingClientRect();
+                const mouseX = e.clientX - rect.left;
+                const mouseY = e.clientY - rect.top;
+                
+                let newPos = toMath(mouseX, mouseY);
+                
+                // Prevent A and B from perfectly overlapping to avoid undefined slopes
+                if (draggingPoint === 'A' || draggingPoint === 'B') {
+                    let other = draggingPoint === 'A' ? pts.B : pts.A;
+                    if (Math.abs(newPos.x - other.x) < 0.1 && Math.abs(newPos.y - other.y) < 0.1) {
+                        return; // Ignore movement if they get too close
+                    }
+                }
+                
+                pts[draggingPoint].x = newPos.x;
+                pts[draggingPoint].y = newPos.y;
+                draw();
+            }
+        });
+
+        window.addEventListener('mouseup', () => draggingPoint = null);
+
+        // Core Drawing Function
+        function draw() {
+            ctx.clearRect(0, 0, width, height);
+            drawGrid();
+
+            // Calculate Slopes
+            let dx1 = pts.B.x - pts.A.x;
+            let dy1 = pts.B.y - pts.A.y;
+            let m1 = (dx1 === 0) ? Infinity : dy1 / dx1;
+
+            let m2;
+            if (mode === 'parallel') {
+                m2 = m1;
+            } else { // perpendicular
+                if (m1 === 0) m2 = Infinity;
+                else if (m1 === Infinity) m2 = 0;
+                else m2 = -1 / m1;
+            }
+
+            // Draw Lines
+            drawLine(pts.A, m1, '#3498db'); // Line 1 (Blue)
+            drawLine(pts.C, m2, '#e74c3c'); // Line 2 (Red)
+
+            // Draw Draggable Points
+            for (let key in pts) {
+                drawPoint(pts[key].x, pts[key].y, key, pts[key].color);
+            }
+
+            updateMathText(m1, m2);
+        }
+
+        // Draw the coordinate grid
+        function drawGrid() {
+            ctx.strokeStyle = '#ecf0f1';
+            ctx.lineWidth = 1;
+            for (let i = 0; i <= width; i += unit) {
+                ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, height); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(width, i); ctx.stroke();
+            }
+            // X and Y axis
+            ctx.strokeStyle = '#bdc3c7';
+            ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.moveTo(0, originY); ctx.lineTo(width, originY); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(originX, 0); ctx.lineTo(originX, height); ctx.stroke();
+        }
+
+        // Draw an infinite line given a point and a slope
+        function drawLine(mathPt, m, color) {
+            ctx.beginPath();
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 3;
+            
+            if (m === Infinity || m === -Infinity || Math.abs(m) > 1000) {
+                // Vertical Line
+                let p1 = toCanvas(mathPt.x, 20);
+                let p2 = toCanvas(mathPt.x, -20);
+                ctx.moveTo(p1.x, p1.y);
+                ctx.lineTo(p2.x, p2.y);
+            } else {
+                // Find points far to the left and right (-30 and +30 units)
+                let y1 = mathPt.y + m * (-30 - mathPt.x);
+                let y2 = mathPt.y + m * (30 - mathPt.x);
+                let p1 = toCanvas(-30, y1);
+                let p2 = toCanvas(30, y2);
+                ctx.moveTo(p1.x, p1.y);
+                ctx.lineTo(p2.x, p2.y);
+            }
+            ctx.stroke();
+        }
+
+        // Draw the interactive points and their labels
+        function drawPoint(x, y, label, color) {
+            let pos = toCanvas(x, y);
+            ctx.beginPath();
+            ctx.arc(pos.x, pos.y, 7, 0, Math.PI * 2);
+            ctx.fillStyle = color;
+            ctx.fill();
+            ctx.strokeStyle = 'white';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            ctx.fillStyle = '#2c3e50';
+            ctx.font = 'bold 16px Arial';
+            ctx.fillText(label, pos.x + 10, pos.y - 10);
+        }
+
+        // Update the textual readouts for slopes
+        function updateMathText(m1, m2) {
+            const formatSlope = (m) => {
+                if (m === Infinity || m === -Infinity || Math.abs(m) > 1000) return "Undefined (Vertical)";
+                if (Math.abs(m) < 0.001) return "0.00 (Horizontal)";
+                return m.toFixed(2);
+            };
+
+            let m1_str = formatSlope(m1);
+            let m2_str = formatSlope(m2);
+
+            let html = `<p><span class="blue">Line 1 Slope (m₁):</span> ${m1_str}</p>`;
+            html += `<p><span class="red">Line 2 Slope (m₂):</span> ${m2_str}</p>`;
+            html += `<hr style="border:1px solid #ddd; margin: 15px 0;">`;
+
+            if (mode === 'parallel') {
+                html += `<p><strong>Relationship:</strong><br>Parallel lines have <strong>equal</strong> slopes.<br><br><i>m₁ = m₂</i></p>`;
+            } else {
+                let product = (m1 === 0 || m1 === Infinity || Math.abs(m1) > 1000 || Math.abs(m2) > 1000) 
+                              ? "N/A (One line is vertical)" 
+                              : (m1 * m2).toFixed(2);
+                
+                html += `<p><strong>Relationship:</strong><br>Perpendicular lines have <strong>negative reciprocal</strong> slopes.<br><br><i>m₁ × m₂ = -1</i></p>`;
+                if(product !== "N/A (One line is vertical)") {
+                    html += `<p>Calculation: ${m1.toFixed(2)} × ${m2.toFixed(2)} = ${product}</p>`;
+                }
+            }
+            mathOutput.innerHTML = html;
+        }
+
+        // Initial Draw
+        draw();
+    </script>
+</body>
+</html>

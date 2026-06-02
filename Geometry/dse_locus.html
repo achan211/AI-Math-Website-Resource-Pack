@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HKDSE Locus Visualizer - Full Canvas Stretch</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', 'Roboto', Helvetica, Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #e9ecef;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+        h2 { color: #2c3e50; margin-bottom: 15px; }
+        #container {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+            text-align: center;
+            width: 650px;
+        }
+        canvas { border: 2px solid #2c3e50; border-radius: 4px; background-color: #ffffff; cursor: crosshair; }
+        .controls {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-top: 20px;
+        }
+        button {
+            padding: 12px;
+            border: none;
+            border-radius: 6px;
+            background-color: #3498db;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s, transform 0.1s;
+        }
+        button:hover { background-color: #2980b9; }
+        button:active { transform: scale(0.98); }
+        .toggle-btn { background-color: #27ae60; grid-column: span 2; }
+        .toggle-btn.active { background-color: #e67e22; }
+        .pause-btn { background-color: #e74c3c; grid-column: span 2; }
+        .pause-btn.active { background-color: #f39c12; }
+        .clear-btn { background-color: #7f8c8d; grid-column: span 2; }
+        .parabola-btn { background-color: #9b59b6; }
+        #description {
+            margin: 15px 0;
+            min-height: 45px;
+            color: #576574;
+            font-weight: 500;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="container">
+        <h2>HKDSE Locus Visualizer</h2>
+        <canvas id="locusCanvas" width="600" height="400"></canvas>
+        <div id="description">Select a locus type to begin.</div>
+        
+        <div class="controls">
+            <button class="toggle-btn" id="coordToggle" onclick="toggleCoords()">Show Coordinates: OFF</button>
+            <button class="pause-btn" id="pauseBtn" onclick="togglePause()">Pause Animation</button>
+            
+            <button onclick="startLocus('circle')">Fixed distance from Point O</button>
+            <button onclick="startLocus('bisector')">Equidistant from Points A & B</button>
+            <button onclick="startLocus('parallel_line')">Fixed distance from Line L</button>
+            <button onclick="startLocus('mid_parallel')">Equidistant from Parallel Lines</button>
+            <button onclick="startLocus('angle_bisector')">Equidistant from Intersecting Lines</button>
+            <button class="parabola-btn" onclick="startLocus('parabola')">Equidistant from a point S to a line L</button>
+            
+            <button class="clear-btn" onclick="resetCanvas()">Clear Canvas</button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('locusCanvas');
+        const ctx = canvas.getContext('2d');
+        const desc = document.getElementById('description');
+        const pauseBtn = document.getElementById('pauseBtn');
+        const coordBtn = document.getElementById('coordToggle');
+        
+        let animationId, progress = 0, showCoords = false, isPaused = false, currentType = null;
+        const centerX = 300, centerY = 200;
+
+        function toggleCoords() {
+            showCoords = !showCoords;
+            coordBtn.innerText = `Show Coordinates: ${showCoords ? 'ON' : 'OFF'}`;
+            coordBtn.classList.toggle('active', showCoords);
+            if (currentType) redraw();
+        }
+
+        function togglePause() {
+            if (!currentType || progress >= 1.1) return;
+            isPaused = !isPaused;
+            pauseBtn.innerText = isPaused ? "Resume Animation" : "Pause Animation";
+            pauseBtn.classList.toggle('active', isPaused);
+            if (!isPaused) animate();
+        }
+
+        function drawGrid() {
+            ctx.lineWidth = 0.5; ctx.strokeStyle = "#e0e0e0";
+            for (let x = 0; x <= 600; x += 25) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, 400); ctx.stroke(); }
+            for (let y = 0; y <= 400; y += 25) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(600, y); ctx.stroke(); }
+            ctx.lineWidth = 1.5; ctx.strokeStyle = "#95a5a6";
+            ctx.beginPath(); ctx.moveTo(centerX, 0); ctx.lineTo(centerX, 400); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(0, centerY); ctx.lineTo(600, centerY); ctx.stroke();
+        }
+
+        function drawPoint(x, y, label, color = "black", isMoving = false) {
+            ctx.fillStyle = color; ctx.beginPath(); ctx.arc(x, y, isMoving ? 5 : 4, 0, Math.PI * 2); ctx.fill();
+            let txt = label + (showCoords ? ` (${Math.round(x-centerX)}, ${Math.round(centerY-y)})` : "");
+            ctx.font = "14px sans-serif";
+            ctx.fillText(txt, x + 10, y - 10);
+        }
+
+        function drawRightAngle(x, y, angle) {
+            const s = 10; ctx.save(); ctx.translate(x, y); ctx.rotate(angle);
+            ctx.strokeStyle = "blue"; ctx.lineWidth = 1; ctx.strokeRect(0, -s, s, s);
+            ctx.restore();
+        }
+
+        function resetCanvas() { 
+            cancelAnimationFrame(animationId); 
+            ctx.clearRect(0, 0, 600, 400); 
+            drawGrid(); 
+            progress = 0; currentType = null; isPaused = false;
+            pauseBtn.innerText = "Pause Animation"; pauseBtn.classList.remove('active');
+            desc.innerText = "Select a locus type to begin.";
+        }
+
+        function startLocus(type) { resetCanvas(); currentType = type; animate(); }
+
+        function redraw() { ctx.clearRect(0, 0, 600, 400); drawGrid(); renderFrame(currentType); }
+
+        function animate() {
+            if (isPaused) return;
+            redraw();
+            progress += 0.003; 
+            if (progress > 1.1) { progress = 1.1; redraw(); return; }
+            animationId = requestAnimationFrame(animate);
+        }
+
+        function renderFrame(type) {
+            ctx.lineWidth = 3; ctx.lineCap = "round";
+            
+            if (type === 'parabola') {
+                desc.innerText = "Locus: Parabola";
+                const p = 50, vY = centerY + 50; 
+                const focusY = vY - p, directrixY = vY + p;
+                
+                ctx.strokeStyle = "#2c3e50"; ctx.lineWidth = 2;
+                ctx.beginPath(); ctx.moveTo(0, directrixY); ctx.lineTo(600, directrixY); ctx.stroke();
+                ctx.fillStyle = "black"; ctx.font = "14px sans-serif";
+                ctx.fillText("L", 10, directrixY + 20);
+                drawPoint(centerX, focusY, "S");
+
+                ctx.strokeStyle = "#e74c3c";
+                const pP = Math.min(1, progress / 1.0);
+                const startX = -250, endX = startX + (500 * pP);
+                ctx.beginPath();
+                for (let x = startX; x <= endX; x++) {
+                    let cx = centerX + x, cy = vY - (x * x) / (4 * p);
+                    if (x === startX) ctx.moveTo(cx, cy); else ctx.lineTo(cx, cy);
+                }
+                ctx.stroke();
+
+                const px = centerX + endX, py = vY - (endX * endX) / (4 * p);
+                const dist = Math.round(directrixY - py);
+                ctx.setLineDash([5, 5]); ctx.strokeStyle = "blue"; ctx.lineWidth = 1.5;
+                ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(centerX, focusY); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(px, directrixY); ctx.stroke();
+                ctx.setLineDash([]);
+                drawRightAngle(px, directrixY, 0);
+                
+                ctx.fillStyle = "blue"; ctx.font = "bold 16px sans-serif";
+                ctx.fillText(`Distance PS = ${dist}`, 20, 40);
+                ctx.fillText(`Distance PL = ${dist}`, 20, 65);
+                drawPoint(px, py, "P", "#e74c3c", true);
+            }
+            else if (type === 'angle_bisector') {
+                desc.innerText = "Locus: A pair of angle bisectors";
+                ctx.strokeStyle = "#2c3e50"; ctx.lineWidth = 2;
+                // Fixed: Intersecting lines now extend to canvas boundaries (0-600 width)
+                ctx.beginPath(); ctx.moveTo(0, 50); ctx.lineTo(600, 350); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(0, 350); ctx.lineTo(600, 50); ctx.stroke();
+
+                const p1P = Math.min(1, progress / 0.9), p2P = Math.max(0, Math.min(1, (progress - 0.1) / 0.9));
+                ctx.strokeStyle = "#e74c3c";
+                let p1x = 600 - (600 * p1P), p1y = centerY;
+                ctx.beginPath(); ctx.moveTo(600, centerY); ctx.lineTo(p1x, p1y); ctx.stroke();
+                let p2x = centerX, p2y = 400 * p2P;
+                ctx.beginPath(); ctx.moveTo(centerX, 0); ctx.lineTo(p2x, p2y); ctx.stroke();
+
+                const drawPerps = (px, py, label, active) => {
+                    if (!active) return;
+                    let m = 0.5, f1x = (px + m*py - m*centerY + m*m*centerX) / (1 + m*m), f1y = centerY + m*(f1x - centerX);
+                    let f2x = (px - m*py + m*centerY + m*m*centerX) / (1 + m*m), f2y = centerY - m*(f2x - centerX);
+                    ctx.setLineDash([5,5]); ctx.strokeStyle="blue"; ctx.lineWidth=1.5;
+                    ctx.beginPath(); ctx.moveTo(px,py); ctx.lineTo(f1x,f1y); ctx.stroke();
+                    ctx.beginPath(); ctx.moveTo(px,py); ctx.lineTo(f2x,f2y); ctx.stroke();
+                    ctx.setLineDash([]); 
+                    drawRightAngle(f1x, f1y, Math.atan(m)); 
+                    drawRightAngle(f2x, f2y, -Math.atan(m));
+                    drawPoint(px, py, label, "#e74c3c", true);
+                };
+                drawPerps(p1x, p1y, "P1", p1P > 0); drawPerps(p2x, p2y, "P2", p2P > 0);
+            }
+            else if (type === 'parallel_line') {
+                desc.innerText = "Locus: A pair of parallel lines";
+                const d = 70;
+                ctx.strokeStyle = "#2c3e50"; ctx.lineWidth = 2;
+                ctx.beginPath(); ctx.moveTo(0, centerY); ctx.lineTo(600, centerY); ctx.stroke();
+                const p1P = Math.min(1, progress / 0.9), p2P = Math.max(0, Math.min(1, (progress - 0.1) / 0.9));
+                let cx1 = 600 * p1P, cx2 = 600 * p2P;
+                ctx.strokeStyle = "#e74c3c";
+                ctx.beginPath(); ctx.moveTo(0, centerY-d); ctx.lineTo(cx1, centerY-d); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(0, centerY+d); ctx.lineTo(cx2, centerY+d); ctx.stroke();
+                if (p1P > 0) {
+                    ctx.setLineDash([5,5]); ctx.strokeStyle="blue"; ctx.beginPath(); ctx.moveTo(cx1, centerY); ctx.lineTo(cx1, centerY-d); ctx.stroke();
+                    ctx.setLineDash([]); drawRightAngle(cx1, centerY, 0); drawPoint(cx1, centerY-d, "P1", "#e74c3c", true);
+                }
+                if (p2P > 0) {
+                    ctx.setLineDash([5,5]); ctx.strokeStyle="blue"; ctx.beginPath(); ctx.moveTo(cx2, centerY); ctx.lineTo(cx2, centerY+d); ctx.stroke();
+                    ctx.setLineDash([]); drawRightAngle(cx2, centerY, 0); drawPoint(cx2, centerY+d, "P2", "#e74c3c", true);
+                }
+            }
+            else if (type === 'circle') {
+                desc.innerText = "Locus: A circle with center O and radius OP";
+                const r = 100; drawPoint(centerX, centerY, "O");
+                const curP = Math.min(1, progress);
+                ctx.strokeStyle = "#e74c3c"; ctx.beginPath(); ctx.arc(centerX, centerY, r, 0, Math.PI*2*curP); ctx.stroke();
+                let px = centerX + r*Math.cos(Math.PI*2*curP), py = centerY + r*Math.sin(Math.PI*2*curP);
+                ctx.setLineDash([5,5]); ctx.strokeStyle="blue"; ctx.beginPath(); ctx.moveTo(centerX,centerY); ctx.lineTo(px,py); ctx.stroke();
+                ctx.setLineDash([]); drawPoint(px, py, "P", "#e74c3c", true);
+            }
+            else if (type === 'bisector') {
+                desc.innerText = "Locus: The perpendicular bisector of segment AB";
+                const ax = centerX - 100, ay = centerY + 50, bx = centerX + 100, by = centerY - 50;
+                drawPoint(ax, ay, "A"); drawPoint(bx, by, "B");
+                ctx.setLineDash([4, 4]); ctx.strokeStyle = "#bdc3c7"; ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx, by); ctx.stroke();
+                ctx.setLineDash([]);
+                const mx = (ax + bx) / 2, my = (ay + by) / 2, dx = -(by - ay), dy = (bx - ax);
+                const curP = Math.min(1, progress);
+                const px = (mx - dx * 1.2) + (dx * 2.4 * curP), py = (my - dy * 1.2) + (dy * 2.4 * curP);
+                ctx.strokeStyle = "#e74c3c"; ctx.beginPath(); ctx.moveTo(mx-dx*1.2, my-dy*1.2); ctx.lineTo(px, py); ctx.stroke();
+                ctx.setLineDash([5, 5]); ctx.strokeStyle = "blue"; ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(px, py); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(bx, by); ctx.lineTo(px, py); ctx.stroke();
+                ctx.setLineDash([]); drawPoint(px, py, "P", "#e74c3c", true);
+            }
+            else if (type === 'mid_parallel') {
+                desc.innerText = "Locus: A line parallel to the two lines";
+                const offset = 60; ctx.strokeStyle = "#2c3e50"; ctx.lineWidth = 2;
+                ctx.beginPath(); ctx.moveTo(0, centerY-offset); ctx.lineTo(600, centerY-offset); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(0, centerY+offset); ctx.lineTo(600, centerY+offset); ctx.stroke();
+                ctx.strokeStyle = "#e74c3c"; const curP = Math.min(1, progress); let curX = 600 * curP;
+                ctx.beginPath(); ctx.moveTo(0, centerY); ctx.lineTo(curX, centerY); ctx.stroke();
+                ctx.setLineDash([5, 5]); ctx.strokeStyle = "blue"; 
+                ctx.beginPath(); ctx.moveTo(curX, centerY); ctx.lineTo(curX, centerY-offset); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(curX, centerY); ctx.lineTo(curX, centerY+offset); ctx.stroke();
+                ctx.setLineDash([]); 
+                drawRightAngle(curX, centerY-offset, 0); 
+                drawRightAngle(curX, centerY+offset, 0);
+                drawPoint(curX, centerY, "P", "#e74c3c", true);
+            }
+        }
+        drawGrid();
+    </script>
+</body>
+</html>
