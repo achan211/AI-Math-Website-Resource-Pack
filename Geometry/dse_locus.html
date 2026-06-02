@@ -4,59 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>HKDSE Locus Visualizer - Full Canvas Stretch</title>
-    <style>
-        body {
-            font-family: 'Segoe UI', 'Roboto', Helvetica, Arial, sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            background-color: #e9ecef;
-            margin: 0;
-            padding: 20px;
-            color: #333;
-        }
-        h2 { color: #2c3e50; margin-bottom: 15px; }
-        #container {
-            background: white;
-            padding: 25px;
-            border-radius: 12px;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.1);
-            text-align: center;
-            width: 650px;
-        }
-        canvas { border: 2px solid #2c3e50; border-radius: 4px; background-color: #ffffff; cursor: crosshair; }
-        .controls {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 12px;
-            margin-top: 20px;
-        }
-        button {
-            padding: 12px;
-            border: none;
-            border-radius: 6px;
-            background-color: #3498db;
-            color: white;
-            font-weight: 600;
-            cursor: pointer;
-            transition: background-color 0.2s, transform 0.1s;
-        }
-        button:hover { background-color: #2980b9; }
-        button:active { transform: scale(0.98); }
-        .toggle-btn { background-color: #27ae60; grid-column: span 2; }
-        .toggle-btn.active { background-color: #e67e22; }
-        .pause-btn { background-color: #e74c3c; grid-column: span 2; }
-        .pause-btn.active { background-color: #f39c12; }
-        .clear-btn { background-color: #7f8c8d; grid-column: span 2; }
-        .parabola-btn { background-color: #9b59b6; }
-        #description {
-            margin: 15px 0;
-            min-height: 45px;
-            color: #576574;
-            font-weight: 500;
-            font-style: italic;
-        }
-    </style>
+    <link rel="stylesheet" href="../style.css">
 </head>
 <body>
 
