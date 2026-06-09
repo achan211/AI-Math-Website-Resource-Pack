@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Law of Large Numbers - Fair Dice Simulator</title>
+    <link rel="stylesheet" href="../style.css">
+    
+    <style>
+        /* Override base layout from style.css to achieve proper full-page layout split */
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+
+        /* Centered global container */
+        .main-wrapper {
+            max-width: 1100px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* Center the header title relative to the entire webpage */
+        .centered-header {
+            text-align: center;
+            width: 100%;
+            margin-bottom: 35px;
+        }
+
+        /* Robust side-by-side flex layout to prevent overlapping components */
+        .simulation-layout {
+            display: flex;
+            flex-direction: row;
+            gap: 35px;
+            width: 100%;
+            justify-content: center;
+            align-items: flex-start;
+            flex-wrap: wrap;
+        }
+
+        /* Left Side layout panel boundaries */
+        .left-panel {
+            flex: 1.1;
+            min-width: 360px;
+            max-width: 520px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        /* Right Side chart panel layout bounds */
+        .right-panel {
+            flex: 1;
+            min-width: 480px;
+            max-width: 540px;
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.06);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .dice-area {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 15px 0;
+        }
+
+        /* Realistic look 3D-ish die face */
+        .dice-face {
+            width: 75px;
+            height: 75px;
+            border: 3px solid #2c3e50;
+            border-radius: 14px;
+            background-color: #ffffff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #2c3e50;
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Shaking animation when dice is rolling */
+        .rolling {
+            animation: shakeDice 0.12s infinite alternate;
+        }
+
+        @keyframes shakeDice {
+            0% { transform: translate(2px, 2px) rotate(0deg); }
+            100% { transform: translate(-2px, -2px) rotate(12deg); }
+        }
+
+        .freq-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            background: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .freq-table th, .freq-table td {
+            padding: 10px 12px;
+            border: 1px solid #e2e8f0;
+            text-align: center;
+        }
+
+        .freq-table th {
+            background-color: #edf2f7;
+            color: #2c3e50;
+            font-weight: 600;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 5px;
+        }
+
+        .action-buttons button {
+            flex: 1;
+            margin-top: 0;
+        }
+
+        button:disabled {
+            background-color: #bdc3c7 !important;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        /* Math layout fraction alignments */
+        .fraction-container {
+            display: inline-block;
+            text-align: center;
+            vertical-align: middle;
+            font-size: 0.9rem;
+            line-height: 1.2;
+        }
+
+        .fraction-numerator {
+            border-bottom: 2px solid #2c3e50;
+            padding: 2px 4px;
+        }
+
+        .fraction-denominator {
+            padding: 2px 4px;
+        }
+
+        .math-equals {
+            vertical-align: middle;
+            margin: 0 8px;
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+
+        canvas {
+            max-width: 100%;
+            height: auto;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="main-wrapper">
+        <header class="centered-header">
+            <h1>Dice Simulator</h1>
+            <p>What does Expected Value actually mean??</p>
+        </header>
+
+        <div class="simulation-layout">
+            
+            <div class="left-panel">
+                <div class="panel" style="margin: 0;">
+                    <div class="action-buttons">
+                        <button id="btn1" onclick="runSimulation(1)">Roll 1x</button>
+                        <button id="btn10" onclick="runSimulation(10)">Roll 10x</button>
+                        <button id="btn100" onclick="runSimulation(100)">Roll 100x</button>
+                    </div>
+
+                    <div class="dice-area">
+                        <div id="dice" class="dice-face">?</div>
+                    </div>
+
+                    <table class="freq-table">
+                        <thead>
+                            <tr>
+                                <th>Face</th>
+                                <th>Frequency</th>
+                                <th>Relative Freq.</th>
+                            </tr>
+                        </thead>
+                        <tbody id="table-rows">
+                            </tbody>
+                    </table>
+                </div>
+
+                <div class="panel" style="margin: 0;">
+                    <h3 style="color: #2c3e50; margin-bottom: 10px;">Mathematical Mean Calculations</h3>
+                    <div id="math-box" class="math" style="min-height: 60px;">
+                        <span class="blue">Mean (&mu;)</span> = <span class="red">0.00</span>
+                    </div>
+                </div>
+
+                <button id="clearBtn" class="clear-btn" style="margin-top: 0;" onclick="resetAll()">Reset Simulation</button>
+            </div>
+
+            <div class="right-panel">
+                <h2 style="margin-bottom: 5px;">Mean Trend Graph</h2>
+                <p class="instructions" style="text-align: center; margin-bottom: 15px;">
+                    The sample mean approaches the theoretical expected value (3.5).
+                </p>
+                <canvas id="trendChart" width="480" height="320"></canvas>
+            </div>
+            
+        </div>
+    </div>
+
+    <script>
+        // Core State Engine
+        let counts = [0, 0, 0, 0, 0, 0];
+        let totalRolls = 0;
+        let cumulativeSum = 0;
+        let historyOfMeans = [];
+
+        const diceElement = document.getElementById('dice');
+        const tableRowsElement = document.getElementById('table-rows');
+        const mathBoxElement = document.getElementById('math-box');
+        const canvas = document.getElementById('trendChart');
+        const ctx = canvas.getContext('2d');
+
+        function initialize() {
+            updateTable();
+            updateMath();
+            drawChart();
+        }
+
+        // Handles structural rolling animation sequencing
+        function runSimulation(rollsCount) {
+            setControlsDisabled(true);
+            diceElement.classList.add('rolling');
+
+            let ticks = 0;
+            const interval = setInterval(() => {
+                diceElement.innerText = Math.floor(Math.random() * 6) + 1;
+                ticks++;
+
+                if (ticks >= 10) {
+                    clearInterval(interval);
+                    diceElement.classList.remove('rolling');
+                    // Begin dynamic live plot rendering
+                    animateRollsData(rollsCount);
+                }
+            }, 60);
+        }
+
+        // Dynamically animate data injection across individual frames
+        function animateRollsData(totalNewRolls) {
+            let rollsAdded = 0;
+            let batchSize = Math.ceil(totalNewRolls / 25); 
+
+            function animationFrameStep() {
+                let remaining = totalNewRolls - rollsAdded;
+                let currentBatch = Math.min(batchSize, remaining);
+                let isolatedFinalRoll = 1;
+
+                for (let i = 0; i < currentBatch; i++) {
+                    isolatedFinalRoll = Math.floor(Math.random() * 6) + 1;
+                    counts[isolatedFinalRoll - 1]++;
+                    totalRolls++;
+                    cumulativeSum += isolatedFinalRoll;
+                    historyOfMeans.push(cumulativeSum / totalRolls);
+                }
+
+                rollsAdded += currentBatch;
+                diceElement.innerText = isolatedFinalRoll;
+                
+                updateTable();
+                updateMath();
+                drawChart();
+
+                if (rollsAdded < totalNewRolls) {
+                    requestAnimationFrame(animationFrameStep);
+                } else {
+                    setControlsDisabled(false);
+                }
+            }
+            requestAnimationFrame(animationFrameStep);
+        }
+
+        function updateTable() {
+            tableRowsElement.innerHTML = '';
+            for (let i = 0; i < 6; i++) {
+                const probability = totalRolls > 0 ? ((counts[i] / totalRolls) * 100).toFixed(1) + '%' : '0.0%';
+                tableRowsElement.innerHTML += `
+                    <tr>
+                        <td><strong>${i + 1}</strong></td>
+                        <td>${counts[i]}</td>
+                        <td>${probability}</td>
+                    </tr>
+                `;
+            }
+        }
+
+        function updateMath() {
+            if (totalRolls === 0) {
+                mathBoxElement.innerHTML = `<span class="blue">Sample Mean (&mu;)</span> = <span class="red">0.0000</span>`;
+                return;
+            }
+
+            const activeMean = (cumulativeSum / totalRolls).toFixed(4);
+            const numeratorFormula = `(1&times;${counts[0]}) + (2&times;${counts[1]}) + (3&times;${counts[2]}) + (4&times;${counts[3]}) + (5&times;${counts[4]}) + (6&times;${counts[5]})`;
+
+            mathBoxElement.innerHTML = `
+                <div style="display: flex; align-items: center; justify-content: center; flex-wrap: wrap; margin-bottom: 12px; font-size:14px;">
+                    <span style="font-weight: 500; margin-right: 5px;">&mu; = </span>
+                    <div class="fraction-container">
+                        <div class="fraction-numerator">${numeratorFormula}</div>
+                        <div class="fraction-denominator">${totalRolls}</div>
+                    </div>
+                    <span class="math-equals">=</span>
+                    <div class="fraction-container">
+                        <div class="fraction-numerator">${cumulativeSum}</div>
+                        <div class="fraction-denominator">${totalRolls}</div>
+                    </div>
+                </div>
+                <div style="text-align: center;"><span class="blue">Sample Mean (&mu;)</span> = <span class="red" style="font-size:20px;">${activeMean}</span></div>
+            `;
+        }
+
+        function drawChart() {
+            const width = canvas.width;
+            const height = canvas.height;
+            
+            // Fixed layout constraints: Increased right padding shifts graph leftward
+            const paddingLeft = 45;
+            const paddingRight = 65; 
+            const paddingTop = 25;
+            const paddingBottom = 40;
+            
+            const graphWidth = width - paddingLeft - paddingRight;
+            const graphHeight = height - paddingTop - paddingBottom;
+
+            ctx.clearRect(0, 0, width, height);
+
+            function getYPixel(val) {
+                return paddingTop + (6.0 - val) * (graphHeight / 5.0);
+            }
+
+            function getXPixel(index) {
+                if (historyOfMeans.length <= 1) return paddingLeft;
+                return paddingLeft + index * (graphWidth / (historyOfMeans.length - 1));
+            }
+
+            // Background Gridlines
+            ctx.strokeStyle = '#e2e8f0';
+            ctx.lineWidth = 1;
+            ctx.fillStyle = '#7f8c8d';
+            ctx.font = '11px sans-serif';
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'middle';
+
+            for (let yVal = 1; yVal <= 6; yVal++) {
+                let yPix = getYPixel(yVal);
+                ctx.beginPath();
+                ctx.moveTo(paddingLeft, yPix);
+                ctx.lineTo(width - paddingRight, yPix);
+                ctx.stroke();
+                ctx.fillText(yVal.toFixed(1), paddingLeft - 8, yPix);
+            }
+
+            // Expected Value Threshold Line (3.5)
+            const expectedY = getYPixel(3.5);
+            ctx.strokeStyle = '#e74c3c';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([6, 4]);
+            ctx.beginPath();
+            ctx.moveTo(paddingLeft, expectedY);
+            ctx.lineTo(width - paddingRight, expectedY);
+            ctx.stroke();
+            ctx.setLineDash([]); 
+
+            ctx.fillStyle = '#e74c3c';
+            ctx.textAlign = 'left';
+            ctx.fillText('Expected Value (3.5)', paddingLeft + 10, expectedY - 10);
+
+            // Container Axes Borders
+            ctx.strokeStyle = '#2c3e50';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(paddingLeft, paddingTop);
+            ctx.lineTo(paddingLeft, height - paddingBottom);
+            ctx.lineTo(width - paddingRight, height - paddingBottom);
+            ctx.stroke();
+
+            // Dynamic X-axis label text configurations
+            ctx.fillStyle = '#7f8c8d';
+            ctx.textBaseline = 'top';
+            
+            // Left Label
+            ctx.textAlign = 'left';
+            ctx.fillText('0', paddingLeft, height - paddingBottom + 6);
+            
+            // Middle & Right Labels
+            if (totalRolls > 0) {
+                ctx.textAlign = 'center';
+                ctx.fillText(Math.floor(totalRolls / 2).toString(), paddingLeft + (graphWidth / 2), height - paddingBottom + 6);
+                
+                // Fixed: Aligned to the right boundary edge to ensure text never overflows canvas
+                ctx.textAlign = 'right';
+                ctx.fillText(totalRolls.toString() + ' Rolls', width - paddingRight + 15, height - paddingBottom + 6);
+            } else {
+                ctx.textAlign = 'right';
+                ctx.fillText('Trials Count', width - paddingRight, height - paddingBottom + 6);
+            }
+
+            // Draw Trendline Paths
+            if (historyOfMeans.length > 0) {
+                ctx.beginPath();
+                ctx.strokeStyle = '#1e70bf';
+                ctx.lineWidth = 2;
+                ctx.lineJoin = 'round';
+
+                for (let i = 0; i < historyOfMeans.length; i++) {
+                    let cx = getXPixel(i);
+                    let cy = getYPixel(historyOfMeans[i]);
+
+                    if (i === 0) {
+                        ctx.moveTo(cx, cy);
+                    } else {
+                        ctx.lineTo(cx, cy);
+                    }
+                }
+                ctx.stroke();
+
+                // Live focus tracer point marker
+                const finalIdx = historyOfMeans.length - 1;
+                ctx.fillStyle = '#1e70bf';
+                ctx.beginPath();
+                ctx.arc(getXPixel(finalIdx), getYPixel(historyOfMeans[finalIdx]), 4, 0, 2 * Math.PI);
+                ctx.fill();
+            }
+        }
+
+        function setControlsDisabled(status) {
+            document.getElementById('btn1').disabled = status;
+            document.getElementById('btn10').disabled = status;
+            document.getElementById('btn100').disabled = status;
+            document.getElementById('clearBtn').disabled = status;
+        }
+
+        function resetAll() {
+            counts = [0, 0, 0, 0, 0, 0];
+            totalRolls = 0;
+            cumulativeSum = 0;
+            historyOfMeans = [];
+            diceElement.innerText = '?';
+            initialize();
+        }
+
+        window.onload = initialize;
+    </script>
+</body>
+</html>
+
+```
