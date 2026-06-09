@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Compound Interest Simulator</title>
+    <link rel="stylesheet" href="../style.css">
+    
+    <style>
+        /* Base layout overrides mirroring the previous layout design architecture */
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+
+        .main-wrapper {
+            max-width: 1100px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .centered-header {
+            text-align: center;
+            width: 100%;
+            margin-bottom: 35px;
+        }
+
+        .simulation-layout {
+            display: flex;
+            flex-direction: row;
+            gap: 35px;
+            width: 100%;
+            justify-content: center;
+            align-items: flex-start;
+            flex-wrap: wrap;
+        }
+
+        .left-panel {
+            flex: 1;
+            min-width: 360px;
+            max-width: 460px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .right-panel {
+            flex: 1.4;
+            min-width: 480px;
+            max-width: 600px;
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.06);
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Form styling structures */
+        .form-group {
+            margin-bottom: 18px;
+            display: flex;
+            flex-direction: column;
+            text-align: left;
+        }
+
+        .form-group label {
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 8px;
+            font-size: 0.95rem;
+        }
+
+        .form-group input[type="number"] {
+            padding: 10px 12px;
+            border: 2px solid #cbd5e1;
+            border-radius: 6px;
+            font-size: 1rem;
+            color: #333;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .form-group input[type="number"]:focus {
+            border-color: #3498db;
+        }
+
+        /* Polished Radio Button Grid Layout (Symmetric 2x2 Grid) */
+        .radio-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-top: 4px;
+        }
+
+        .radio-option {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            background: #ffffff;
+            border: 2px solid #cbd5e1;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .radio-option input {
+            margin-right: 8px;
+            accent-color: #3498db;
+        }
+
+        .radio-option:hover {
+            background: #f8fafc;
+            border-color: #94a3b8;
+        }
+
+        /* Visual indicator for checked radio boxes */
+        .radio-option.selected {
+            border-color: #3498db;
+            background-color: #ebf8ff;
+            color: #2b6cb0;
+        }
+
+        /* Error Banner messaging framework */
+        .error-message {
+            color: #e53e3e;
+            background: #fff5f5;
+            border: 1px solid #fed7d7;
+            padding: 10px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            margin-bottom: 15px;
+            display: none;
+            font-weight: 500;
+        }
+
+        /* High-performance table schedule display container */
+        .table-scroll-container {
+            max-height: 480px;
+            overflow-y: auto;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            margin-top: 15px;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+        }
+
+        .schedule-table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: center;
+            font-size: 0.9rem;
+        }
+
+        .schedule-table th {
+            background-color: #edf2f7;
+            color: #2c3e50;
+            font-weight: 600;
+            padding: 12px;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            border-bottom: 2px solid #cbd5e1;
+            text-align: center;
+        }
+
+        .schedule-table td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #edf2f7;
+            color: #4a5568;
+            text-align: center;
+        }
+
+        .schedule-table tr:nth-child(even) {
+            background-color: #f7fafc;
+        }
+
+        .schedule-table tr:hover {
+            background-color: #edf2f7;
+        }
+
+        /* Dynamic metrics performance cards */
+        .summary-card {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 10px;
+        }
+
+        .metric-box {
+            background: #ffffff;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            text-align: center;
+        }
+
+        .metric-label {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            color: #7f8c8d;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .metric-value {
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="main-wrapper">
+        <header class="centered-header">
+            <h1>Compound Interest Simulator</h1>
+            <p>Watch your wealth grow across compounding frequencies</p>
+        </header>
+
+        <div class="simulation-layout">
+            
+            <div class="left-panel">
+                <div class="panel" style="margin: 0; text-align: left;">
+                    <div id="validation-error" class="error-message"></div>
+
+                    <div class="form-group">
+                        <label for="principal">Principal Amount ($)</label>
+                        <input type="number" id="principal" value="10000" min="0.01" step="any" placeholder="e.g. 5000">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="rate">Annual Interest Rate (% p.a.)</label>
+                        <input type="number" id="rate" value="5" min="0" max="100" step="any" placeholder="e.g. 4.5">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Compounding Frequency</label>
+                        <div class="radio-grid">
+                            <label class="radio-option">
+                                <input type="radio" name="frequency" value="1" onclick="syncRadioStyle()"> Yearly
+                            </label>
+                            <label class="radio-option">
+                                <input type="radio" name="frequency" value="2" onclick="syncRadioStyle()"> Half-Yearly
+                            </label>
+                            <label class="radio-option selected">
+                                <input type="radio" name="frequency" value="4" checked onclick="syncRadioStyle()"> Quarterly
+                            </label>
+                            <label class="radio-option">
+                                <input type="radio" name="frequency" value="12" onclick="syncRadioStyle()"> Monthly
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="years">Time Frame (Years)</label>
+                        <input type="number" id="years" value="3" min="1" step="1" placeholder="e.g. 5">
+                    </div>
+
+                    <button onclick="calculateCompoundInterest()" style="width: 100%; margin-top: 10px;">Calculate Schedule</button>
+                </div>
+
+                <div class="panel" style="margin: 0;">
+                    <h3 style="color: #2c3e50; font-size: 1.05rem; text-align: left; margin-bottom: 10px;">Simulation Key Outputs</h3>
+                    <div class="summary-card">
+                        <div class="metric-box">
+                            <div class="metric-label">Total Balance</div>
+                            <div id="kpi-balance" class="metric-value math"><span class="blue">$0.00</span></div>
+                        </div>
+                        <div class="metric-box">
+                            <div class="metric-label">Total Interest</div>
+                            <div id="kpi-interest" class="metric-value math"><span class="red">$0.00</span></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="right-panel">
+                <h2 style="font-size: 1.4rem; margin-bottom: 5px; color: #2c3e50;">Amortization Schedule Ledger</h2>
+                <p class="instructions" style="font-size: 13px; color: #7f8c8d; text-align: center;">Comprehensive breakdown mapping balance and interest generation points period-by-period.</p>
+                
+                <div class="table-scroll-container">
+                    <table class="schedule-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 15%;">Period</th>
+                                <th style="width: 25%;">Interest Earned</th>
+                                <th style="width: 30%;">Total Interest</th>
+                                <th style="width: 30%;">Accumulated Balance</th>
+                            </tr>
+                        </thead>
+                        <tbody id="schedule-tbody">
+                            <tr>
+                                <td colspan="4" style="text-align: center; color: #a0aec0; padding: 30px;">Provide configurations on the left panel to execute calculations.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // Adjust style feedback highlighting selected frequency cards dynamically
+        function syncRadioStyle() {
+            const options = document.querySelectorAll('.radio-option');
+            options.forEach(opt => {
+                const radio = opt.querySelector('input');
+                if (radio.checked) {
+                    opt.classList.add('selected');
+                } else {
+                    opt.classList.remove('selected');
+                }
+            });
+        }
+
+        function calculateCompoundInterest() {
+            // Error messaging DOM bindings
+            const errorElement = document.getElementById('validation-error');
+            errorElement.style.display = 'none';
+            errorElement.innerHTML = '';
+
+            // Input Variable Extractions
+            const principal = parseFloat(document.getElementById('principal').value);
+            const nominalRatePa = parseFloat(document.getElementById('rate').value);
+            const years = parseInt(document.getElementById('years').value);
+            
+            const checkedRadio = document.querySelector('input[name="frequency"]:checked');
+            const compoundingPeriodsPerYear = parseInt(checkedRadio.value);
+
+            // Comprehensive Input Validation Framework Checking System
+            let validationsPassed = true;
+            let errorsList = [];
+
+            if (isNaN(principal) || principal <= 0) {
+                errorsList.push("Principal must be a positive number greater than 0.");
+                validationsPassed = false;
+            }
+            if (isNaN(nominalRatePa) || nominalRatePa < 0 || nominalRatePa > 100) {
+                errorsList.push("Annual interest rate must fall within a valid range between 0% and 100%.");
+                validationsPassed = false;
+            }
+            if (isNaN(years) || years <= 0) {
+                errorsList.push("Time frame duration must register as a positive number of years (minimum 1 year).");
+                validationsPassed = false;
+            }
+
+            if (!validationsPassed) {
+                errorElement.innerHTML = errorsList.join("<br>");
+                errorElement.style.display = 'block';
+                return;
+            }
+
+            // Calculation Constants Engine Variables Configuration
+            const totalPeriods = compoundingPeriodsPerYear * years;
+            const periodicRate = (nominalRatePa / 100) / compoundingPeriodsPerYear;
+
+            let currentBalance = principal;
+            let totalInterestAccumulated = 0;
+
+            const tbody = document.getElementById('schedule-tbody');
+            tbody.innerHTML = ''; 
+
+            // Structural Loop rendering execution matrices
+            for (let period = 1; period <= totalPeriods; period++) {
+                let interestThisPeriod = currentBalance * periodicRate;
+                totalInterestAccumulated += interestThisPeriod;
+                currentBalance += interestThisPeriod;
+
+                const labelText = getPeriodLabel(period, compoundingPeriodsPerYear);
+
+                tbody.innerHTML += `
+                    <tr>
+                        <td><strong>${labelText}</strong></td>
+                        <td>$${interestThisPeriod.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                        <td style="color: #c0392b; font-weight: 500;">$${totalInterestAccumulated.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                        <td style="color: #2980b9; font-weight: 600;">$${currentBalance.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                    </tr>
+                `;
+            }
+
+            // Update Dynamic KPI Summary blocks interface properties
+            document.getElementById('kpi-balance').innerHTML = `<span class="blue">$${currentBalance.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>`;
+            document.getElementById('kpi-interest').innerHTML = `<span class="red">$${totalInterestAccumulated.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>`;
+        }
+
+        // Context-aware translation labels formatting helper mapping metrics engines 
+        function getPeriodLabel(period, frequency) {
+            switch(frequency) {
+                case 1:
+                    return `Yr ${period}`;
+                case 2:
+                    return `H-Yr ${period}`;
+                case 4:
+                    return `Qtr ${period}`;
+                case 12:
+                    return `Mo ${period}`;
+                default:
+                    return `#${period}`;
+            }
+        }
+
+        // Fire rendering configurations cleanly on structural DOM setups completion loop
+        window.onload = function() {
+            syncRadioStyle();
+            calculateCompoundInterest();
+        };
+    </script>
+</body>
+</html>
