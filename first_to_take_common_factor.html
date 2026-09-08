@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>First to Take Common Factors!</title>
+    <style>
+        :root {
+            --team1-color: #ff0055;
+            --team1-glow: rgba(255, 0, 85, 0.6);
+            --team2-color: #00d2ff;
+            --team2-glow: rgba(0, 210, 255, 0.6);
+            --bg-dark: #0a0c16;
+            --card-bg: #16192b;
+            --accent-yellow: #ffe600;
+            --correct-green: #00ff66;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            user-select: none;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: #ffffff;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            padding: 15px;
+            overflow-x: hidden;
+        }
+
+        /* HEADER */
+        header {
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: #fff;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.5),
+                         0 0 20px var(--accent-yellow);
+        }
+
+        .subtitle {
+            font-size: 1rem;
+            color: #aaa;
+            margin-top: 5px;
+        }
+
+        /* SCOREBOARD */
+        .scoreboard {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            max-width: 900px;
+            background: var(--card-bg);
+            border-radius: 15px;
+            padding: 15px 25px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.5);
+            border: 1px solid #2a2f4c;
+            margin-bottom: 15px;
+        }
+
+        .team-score-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex: 1;
+        }
+
+        .team-name {
+            font-size: 1.4rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .team1-text { color: var(--team1-color); text-shadow: 0 0 8px var(--team1-glow); }
+        .team2-text { color: var(--team2-color); text-shadow: 0 0 8px var(--team2-glow); }
+
+        .score-num {
+            font-size: 3rem;
+            font-weight: 900;
+            line-height: 1;
+            margin: 5px 0;
+        }
+
+        .progress-bar-outer {
+            width: 80%;
+            height: 10px;
+            background: #090a10;
+            border-radius: 5px;
+            overflow: hidden;
+            border: 1px solid #333;
+        }
+
+        .progress-bar-inner {
+            height: 100%;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .team1-bg { background-color: var(--team1-color); box-shadow: 0 0 10px var(--team1-color); }
+        .team2-bg { background-color: var(--team2-color); box-shadow: 0 0 10px var(--team2-color); }
+
+        .vs-badge {
+            font-size: 1.2rem;
+            font-weight: 900;
+            color: var(--accent-yellow);
+            padding: 10px 15px;
+            background: #090a10;
+            border-radius: 50%;
+            border: 2px solid var(--accent-yellow);
+        }
+
+        /* GAMEPLAY CONTAINER */
+        .game-container {
+            width: 100%;
+            max-width: 900px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            position: relative;
+        }
+
+        /* POLYNOMIAL DISPLAY */
+        .polynomial-card {
+            width: 100%;
+            background: linear-gradient(135deg, #1f243d, #121424);
+            border-radius: 20px;
+            padding: 25px 15px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+            border: 2px solid #3b426b;
+            position: relative;
+            min-height: 110px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .poly-badge {
+            position: absolute;
+            top: -12px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--accent-yellow);
+            color: #000;
+            font-weight: 800;
+            font-size: 0.8rem;
+            padding: 3px 12px;
+            border-radius: 10px;
+            text-transform: uppercase;
+        }
+
+        .polynomial-text {
+            font-size: 2.5rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+            color: #fff;
+            word-wrap: break-word;
+        }
+
+        .polynomial-text sup {
+            font-size: 1.5rem;
+            color: var(--accent-yellow);
+        }
+
+        /* DUAL PLAYERS ARENA */
+        .arena {
+            display: flex;
+            width: 100%;
+            gap: 20px;
+        }
+
+        .player-side {
+            flex: 1;
+            background: var(--card-bg);
+            border-radius: 15px;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            border: 2px solid transparent;
+        }
+
+        .player-side.team1-side { border-color: rgba(255, 0, 85, 0.3); }
+        .player-side.team2-side { border-color: rgba(0, 210, 255, 0.3); }
+
+        .side-title {
+            text-align: center;
+            font-size: 1rem;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .option-btn {
+            background: #222744;
+            color: #fff;
+            border: 2px solid #3b426b;
+            border-radius: 12px;
+            padding: 14px 10px;
+            font-size: 1.4rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .option-btn sup {
+            font-size: 0.9rem;
+            color: var(--accent-yellow);
+        }
+
+        .key-hint {
+            font-size: 0.8rem;
+            background: rgba(255,255,255,0.1);
+            padding: 2px 8px;
+            border-radius: 6px;
+            color: #aaa;
+        }
+
+        .team1-side .option-btn:hover {
+            background: var(--team1-color);
+            border-color: #fff;
+            box-shadow: 0 0 15px var(--team1-glow);
+            transform: translateY(-2px);
+        }
+
+        .team2-side .option-btn:hover {
+            background: var(--team2-color);
+            border-color: #fff;
+            box-shadow: 0 0 15px var(--team2-glow);
+            transform: translateY(-2px);
+        }
+
+        .team1-side .option-btn:active, .team2-side .option-btn:active { transform: scale(0.97); }
+
+        /* FEEDBACK BANNER */
+        .feedback-banner {
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            font-weight: 800;
+            border-radius: 8px;
+            width: 100%;
+            max-width: 900px;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+
+        .feedback-banner.show { opacity: 1; }
+        .feedback-banner.correct { background: rgba(0, 255, 102, 0.2); color: var(--correct-green); border: 1px solid var(--correct-green); }
+        .feedback-banner.wrong { background: rgba(255, 0, 85, 0.2); color: var(--team1-color); border: 1px solid var(--team1-color); }
+
+        /* OVERLAYS (INTERMISSION & WINNER) */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(10, 12, 22, 0.93);
+            backdrop-filter: blur(6px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .prompt-card {
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 40px;
+            text-align: center;
+            max-width: 520px;
+            width: 90%;
+            border: 3px solid var(--accent-yellow);
+            box-shadow: 0 0 35px rgba(255, 230, 0, 0.4);
+            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        @keyframes popIn {
+            from { transform: scale(0.7); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        .prompt-title {
+            font-size: 2rem;
+            margin-bottom: 25px;
+            color: #fff;
+            line-height: 1.3;
+        }
+
+        .teacher-badge {
+            display: inline-block;
+            background: rgba(255, 230, 0, 0.2);
+            color: var(--accent-yellow);
+            font-size: 0.85rem;
+            font-weight: 800;
+            padding: 4px 12px;
+            border-radius: 12px;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            border: 1px solid var(--accent-yellow);
+        }
+
+        /* KEYBOARD INSTRUCTION DISPLAY */
+        .key-instruction-box {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+
+        .key-tag {
+            background: #222744;
+            color: var(--accent-yellow);
+            font-size: 1.2rem;
+            font-weight: 900;
+            padding: 10px 20px;
+            border-radius: 10px;
+            border: 2px solid var(--accent-yellow);
+            box-shadow: 0 0 15px rgba(255, 230, 0, 0.3);
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); box-shadow: 0 0 10px rgba(255, 230, 0, 0.3); }
+            50% { transform: scale(1.05); box-shadow: 0 0 20px rgba(255, 230, 0, 0.7); }
+            100% { transform: scale(1); box-shadow: 0 0 10px rgba(255, 230, 0, 0.3); }
+        }
+
+        .action-btn {
+            background: var(--accent-yellow);
+            color: #000;
+            border: none;
+            padding: 14px 35px;
+            font-size: 1.3rem;
+            font-weight: 800;
+            border-radius: 30px;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: all 0.2s ease;
+            box-shadow: 0 0 15px rgba(255, 230, 0, 0.5);
+        }
+
+        .action-btn:hover {
+            transform: scale(1.06);
+            background: #fff;
+        }
+
+        /* RESPONSIVE DESIGN */
+        @media (max-width: 768px) {
+            h1 { font-size: 1.8rem; }
+            .polynomial-text { font-size: 1.8rem; }
+            .arena { flex-direction: column; }
+            .score-num { font-size: 2.2rem; }
+            .prompt-title { font-size: 1.5rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>First to Take Common Factors!</h1>
+        <p class="subtitle">Find the Common Factors of all terms! First team to 20 points wins!</p>
+    </header>
+
+    <!-- SCOREBOARD -->
+    <div class="scoreboard">
+        <div class="team-score-card">
+            <div class="team-name team1-text">Team Red</div>
+            <div class="score-num team1-text" id="score1">0</div>
+            <div class="progress-bar-outer">
+                <div class="progress-bar-inner team1-bg" id="prog1"></div>
+            </div>
+        </div>
+
+        <div class="vs-badge">VS</div>
+
+        <div class="team-score-card">
+            <div class="team-name team2-text">Team Blue</div>
+            <div class="score-num team2-text" id="score2">0</div>
+            <div class="progress-bar-outer">
+                <div class="progress-bar-inner team2-bg" id="prog2"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN GAME AREA -->
+    <div class="game-container">
+        <!-- POLYNOMIAL DISPLAY -->
+        <div class="polynomial-card">
+            <span class="poly-badge" id="termCountBadge">3 Terms</span>
+            <div class="polynomial-text" id="polyDisplay">Press Key to Begin</div>
+        </div>
+
+        <!-- DUAL CONTROLS ARENA -->
+        <div class="arena">
+            <!-- TEAM RED CONTROLS -->
+            <div class="player-side team1-side">
+                <div class="side-title team1-text">TEAM RED CONTROLS</div>
+                <button class="option-btn" onclick="submitAnswer(1, 0)">
+                    <span id="t1-opt0">-</span>
+                    <span class="key-hint">Q / 1</span>
+                </button>
+                <button class="option-btn" onclick="submitAnswer(1, 1)">
+                    <span id="t1-opt1">-</span>
+                    <span class="key-hint">W / 2</span>
+                </button>
+                <button class="option-btn" onclick="submitAnswer(1, 2)">
+                    <span id="t1-opt2">-</span>
+                    <span class="key-hint">E / 3</span>
+                </button>
+            </div>
+
+            <!-- TEAM BLUE CONTROLS -->
+            <div class="player-side team2-side">
+                <div class="side-title team2-text">TEAM BLUE CONTROLS</div>
+                <button class="option-btn" onclick="submitAnswer(2, 0)">
+                    <span id="t2-opt0">-</span>
+                    <span class="key-hint">I / 8</span>
+                </button>
+                <button class="option-btn" onclick="submitAnswer(2, 1)">
+                    <span id="t2-opt1">-</span>
+                    <span class="key-hint">O / 9</span>
+                </button>
+                <button class="option-btn" onclick="submitAnswer(2, 2)">
+                    <span id="t2-opt2">-</span>
+                    <span class="key-hint">P / 0</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- FEEDBACK OVERLAY BANNER -->
+    <div class="feedback-banner" id="feedbackBanner">Ready!</div>
+
+    <!-- INTERMISSION MODAL (ONLY KEYBOARD TRIGGERED) -->
+    <div class="modal-overlay" id="intermissionModal">
+        <div class="prompt-card">
+            <span class="teacher-badge">Teacher Control</span>
+            <div class="prompt-title">Are you Ready for the next Round?</div>
+            <p style="color:#aaa; margin-bottom: 10px;">Press key to start next round:</p>
+            <div class="key-instruction-box">
+                <span class="key-tag">SPACEBAR</span>
+                <span style="color:#fff; font-weight:bold;">OR</span>
+                <span class="key-tag">ENTER</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- WINNER MODAL -->
+    <div class="modal-overlay" id="winnerModal">
+        <div class="prompt-card">
+            <div class="prompt-title" id="winnerTitle">TEAM RED WINS!</div>
+            <p id="winnerSub" style="font-size:1.2rem; color:#aaa; margin-bottom: 20px;">Score: 20 points</p>
+            <button class="action-btn" onclick="restartGame()">PLAY AGAIN</button>
+        </div>
+    </div>
+
+    <script>
+        // GAME STATE
+        const TARGET_SCORE = 20;
+        let score1 = 0;
+        let score2 = 0;
+        let currentQuestion = null;
+        let isTurnActive = false;
+        let isIntermission = false;
+
+        // GCD Helpers
+        function gcd(a, b) {
+            return b === 0 ? Math.abs(a) : gcd(b, a % b);
+        }
+
+        function gcdArray(arr) {
+            return arr.reduce((acc, val) => gcd(acc, val));
+        }
+
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+
+        // GENERATE QUESTION (AT MOST 4 TERMS, AT MOST 2 VARIABLES)
+        function generatePolynomial() {
+            // Pick GCF numeric coefficient (2 to 12)
+            const coeffList = [2, 3, 4, 5, 6, 8, 9, 10, 12];
+            const gCoeff = coeffList[Math.floor(Math.random() * coeffList.length)];
+
+            // Number of variables: strictly 1 or 2
+            const numVars = Math.random() < 0.5 ? 1 : 2;
+            const varChoice = Math.random() < 0.5 ? ['x', 'y'] : ['a', 'b'];
+            
+            const v1 = varChoice[0];
+            const v2 = numVars === 2 ? varChoice[1] : null;
+
+            const gX = Math.floor(Math.random() * 3); // 0, 1, or 2
+            const gY = numVars === 2 ? Math.floor(Math.random() * 3) : 0; // 0, 1, or 2 if 2 variables
+
+            // Number of terms: at most 4 (2, 3, or 4 terms)
+            const numTerms = Math.floor(Math.random() * 3) + 2; 
+
+            // Generate coprime multipliers for numeric coefficients
+            let multipliers = [];
+            let validCoprime = false;
+            while (!validCoprime) {
+                multipliers = [];
+                for (let i = 0; i < numTerms; i++) {
+                    multipliers.push(Math.floor(Math.random() * 6) + 1); // 1 to 6
+                }
+                if (gcdArray(multipliers) === 1) validCoprime = true;
+            }
+
+            // Generate relative exponents
+            let relX = Array(numTerms).fill(0).map(() => Math.floor(Math.random() * 3));
+            let relY = Array(numTerms).fill(0).map(() => Math.floor(Math.random() * 3));
+            
+            // Ensure at least one term has relative exp 0 so GCF exponent is exact
+            relX[Math.floor(Math.random() * numTerms)] = 0;
+            if (numVars === 2) {
+                relY[Math.floor(Math.random() * numTerms)] = 0;
+            } else {
+                relY = Array(numTerms).fill(0);
+            }
+
+            // Build polynomial terms
+            let polyTerms = [];
+            for (let i = 0; i < numTerms; i++) {
+                let termCoeff = gCoeff * multipliers[i];
+                let termX = gX + relX[i];
+                let termY = numVars === 2 ? (gY + relY[i]) : 0;
+
+                let termStr = formatTerm(termCoeff, v1, termX, v2, termY);
+                polyTerms.push(termStr);
+            }
+
+            let polyHTML = polyTerms.map((t, idx) => {
+                if (idx === 0) return t;
+                const sign = Math.random() < 0.5 ? ' + ' : ' - ';
+                return `${sign}${t}`;
+            }).join('');
+
+            // Format correct GCF
+            let correctGCFStr = formatGCF(gCoeff, v1, gX, v2, gY);
+
+            // Distractors
+            const optionsSet = new Set();
+            optionsSet.add(correctGCFStr);
+
+            // Distractor 1: Incorrect numeric coefficient
+            let d1Coeff = (gCoeff > 2 && Math.random() < 0.5) ? Math.floor(gCoeff / 2) : gCoeff * 2;
+            optionsSet.add(formatGCF(d1Coeff, v1, gX, v2, gY));
+
+            // Distractor 2: Incorrect exponent for variable 1
+            let d2X = gX > 0 ? gX - 1 : gX + 1;
+            optionsSet.add(formatGCF(gCoeff, v1, d2X, v2, gY));
+
+            // Distractor 3: Incorrect exponent for variable 2 (or diff coefficient)
+            if (numVars === 2) {
+                let d3Y = gY > 0 ? gY - 1 : gY + 1;
+                optionsSet.add(formatGCF(gCoeff, v1, gX, v2, d3Y));
+            } else {
+                optionsSet.add(formatGCF(gCoeff + 1, v1, gX, v2, gY));
+            }
+
+            // Fallback options if set size < 3
+            let count = 1;
+            while (optionsSet.size < 3) {
+                optionsSet.add(formatGCF(gCoeff + count, v1, gX, v2, gY));
+                count++;
+            }
+
+            let optionsList = Array.from(optionsSet).slice(0, 3);
+            shuffleArray(optionsList);
+
+            return {
+                polyHTML: polyHTML,
+                numTerms: numTerms,
+                correctAnswer: correctGCFStr,
+                options: optionsList
+            };
+        }
+
+        function formatTerm(coeff, v1, exp1, v2, exp2) {
+            let str = coeff.toString();
+            if (exp1 === 1) str += v1;
+            else if (exp1 > 1) str += `${v1}<sup>${exp1}</sup>`;
+
+            if (v2 && exp2 === 1) str += v2;
+            else if (v2 && exp2 > 1) str += `${v2}<sup>${exp2}</sup>`;
+
+            return str;
+        }
+
+        function formatGCF(coeff, v1, exp1, v2, exp2) {
+            let varsStr = "";
+            if (exp1 === 1) varsStr += v1;
+            else if (exp1 > 1) varsStr += `${v1}<sup>${exp1}</sup>`;
+
+            if (v2 && exp2 === 1) varsStr += v2;
+            else if (v2 && exp2 > 1) varsStr += `${v2}<sup>${exp2}</sup>`;
+
+            if (varsStr === "") return coeff.toString();
+            if (coeff === 1) return varsStr;
+            return coeff + varsStr;
+        }
+
+        // RENDER QUESTION
+        function loadNextTurn() {
+            currentQuestion = generatePolynomial();
+
+            document.getElementById('polyDisplay').innerHTML = currentQuestion.polyHTML;
+            document.getElementById('termCountBadge').innerText = `${currentQuestion.numTerms} Terms`;
+
+            for (let i = 0; i < 3; i++) {
+                document.getElementById(`t1-opt${i}`).innerHTML = currentQuestion.options[i];
+                document.getElementById(`t2-opt${i}`).innerHTML = currentQuestion.options[i];
+            }
+
+            isTurnActive = true;
+            isIntermission = false;
+        }
+
+        // ANSWER SUBMISSION LOGIC
+        function submitAnswer(team, optionIndex) {
+            if (!isTurnActive || isIntermission) return;
+            isTurnActive = false; // Lock answers for this turn
+
+            const chosenAnswer = currentQuestion.options[optionIndex];
+            const isCorrect = (chosenAnswer === currentQuestion.correctAnswer);
+            const teamName = team === 1 ? "TEAM RED" : "TEAM BLUE";
+            const opposingTeamName = team === 1 ? "TEAM BLUE" : "TEAM RED";
+
+            const banner = document.getElementById('feedbackBanner');
+
+            if (isCorrect) {
+                if (team === 1) score1++;
+                else score2++;
+
+                banner.className = "feedback-banner show correct";
+                banner.innerHTML = `&#10004; ${teamName} GOT IT RIGHT! (+1 POINT)`;
+            } else {
+                if (team === 1) score2++;
+                else score1++;
+
+                banner.className = "feedback-banner show wrong";
+                banner.innerHTML = `&#10008; ${teamName} WRONG! POINT TO ${opposingTeamName}!`;
+            }
+
+            updateScoreboard();
+
+            // Check Win Condition
+            if (score1 >= TARGET_SCORE || score2 >= TARGET_SCORE) {
+                setTimeout(showWinnerModal, 1200);
+            } else {
+                // Show Intermission Prompt after brief feedback delay
+                setTimeout(showIntermission, 1200);
+            }
+        }
+
+        function showIntermission() {
+            isIntermission = true;
+            document.getElementById('feedbackBanner').className = "feedback-banner";
+            document.getElementById('intermissionModal').classList.add('active');
+        }
+
+        function startNextRound() {
+            document.getElementById('intermissionModal').classList.remove('active');
+            loadNextTurn();
+        }
+
+        function updateScoreboard() {
+            document.getElementById('score1').innerText = score1;
+            document.getElementById('score2').innerText = score2;
+
+            document.getElementById('prog1').style.width = `${Math.min(100, (score1 / TARGET_SCORE) * 100)}%`;
+            document.getElementById('prog2').style.width = `${Math.min(100, (score2 / TARGET_SCORE) * 100)}%`;
+        }
+
+        function showWinnerModal() {
+            const modal = document.getElementById('winnerModal');
+            const winnerTitle = document.getElementById('winnerTitle');
+            const winnerSub = document.getElementById('winnerSub');
+
+            if (score1 >= TARGET_SCORE) {
+                winnerTitle.innerText = "TEAM RED WINS!";
+                winnerTitle.className = "prompt-title team1-text";
+                winnerSub.innerText = `Final Score: ${score1} - ${score2}`;
+            } else {
+                winnerTitle.innerText = "TEAM BLUE WINS!";
+                winnerTitle.className = "prompt-title team2-text";
+                winnerSub.innerText = `Final Score: ${score2} - ${score1}`;
+            }
+
+            modal.classList.add('active');
+        }
+
+        function restartGame() {
+            score1 = 0;
+            score2 = 0;
+            updateScoreboard();
+            document.getElementById('feedbackBanner').className = "feedback-banner";
+            document.getElementById('winnerModal').classList.remove('active');
+            showIntermission();
+        }
+
+        // KEYBOARD SHORTCUTS
+        document.addEventListener('keydown', (e) => {
+            // STRICT REQUIREMENT: Only Spacebar or Enter can advance from Intermission
+            if (isIntermission) {
+                if (e.key === ' ' || e.key === 'Spacebar' || e.key === 'Enter') {
+                    e.preventDefault();
+                    startNextRound();
+                }
+                return; // Ignore other key presses during intermission
+            }
+
+            if (!isTurnActive) return;
+
+            const key = e.key.toLowerCase();
+
+            // Team 1 Shortcuts: Q, W, E or 1, 2, 3
+            if (key === 'q' || key === '1') submitAnswer(1, 0);
+            else if (key === 'w' || key === '2') submitAnswer(1, 1);
+            else if (key === 'e' || key === '3') submitAnswer(1, 2);
+
+            // Team 2 Shortcuts: I, O, P or 8, 9, 0
+            else if (key === 'i' || key === '8') submitAnswer(2, 0);
+            else if (key === 'o' || key === '9') submitAnswer(2, 1);
+            else if (key === 'p' || key === '0') submitAnswer(2, 2);
+        });
+
+        // INIT GAME ON PAGE LOAD
+        restartGame();
+    </script>
+</body>
+</html>
