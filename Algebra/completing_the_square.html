@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Completing the Square - Geometric Visualizer</title>
+    <link rel="stylesheet" href="../style.css">
+    <style>
+        .applet-wrapper {
+            display: flex;
+            gap: 20px;
+            align-items: flex-start;
+            justify-content: center;
+            width: 100%;
+            flex-wrap: wrap;
+        }
+
+        .canvas-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .slider-side-panel {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: #ecf0f1;
+            padding: 20px 15px;
+            border-radius: 8px;
+            min-width: 120px;
+            height: 500px;
+            gap: 15px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+
+        .slider-side-panel label {
+            font-size: 0.85rem;
+            font-weight: bold;
+            color: #2c3e50;
+            text-align: center;
+        }
+
+        .b-display {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #2980b9;
+            background: white;
+            padding: 6px 16px;
+            border-radius: 6px;
+            border: 1px solid #bdc3c7;
+        }
+
+        #b-slider {
+            writing-mode: bt-lr;
+            -webkit-appearance: slider-vertical;
+            width: 12px;
+            height: 260px;
+            cursor: pointer;
+        }
+
+        /* Action buttons single row */
+        .button-row {
+            display: flex;
+            gap: 12px;
+            width: 100%;
+            margin-top: 15px;
+        }
+
+        .button-row button {
+            flex: 1;
+            padding: 14px 10px;
+            font-size: 0.95rem;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            border: none;
+            transition: background 0.2s ease;
+        }
+
+        .complete-btn {
+            background-color: #e74c3c;
+            color: white;
+            box-shadow: 0 4px 10px rgba(231, 76, 60, 0.3);
+        }
+
+        .complete-btn:hover {
+            background-color: #c0392b;
+        }
+
+        .parabola-btn {
+            background-color: #9b59b6;
+            color: white;
+        }
+
+        .parabola-btn:hover {
+            background-color: #8e44ad;
+        }
+
+        .clear-btn {
+            background-color: #7f8c8d;
+            color: white;
+        }
+
+        .clear-btn:hover {
+            background-color: #707b7c;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h1>Completing the Square: x² + bx</h1>
+        </header>
+
+        <div class="applet-wrapper">
+            <!-- Main Canvas Area -->
+            <div class="canvas-container">
+                <canvas id="canvas" width="500" height="500"></canvas>
+            </div>
+
+            <!-- Side Slider Panel -->
+            <div class="slider-side-panel">
+                <label for="b-slider">Choose a number</label>
+                <span id="b-value" class="b-display">6</span>
+                <input type="range" id="b-slider" min="2" max="10" step="2" value="6" orient="vertical">
+            </div>
+        </div>
+
+        <!-- Single Row for All Three Action Buttons -->
+        <div class="button-row">
+            <button id="complete-sq-btn" class="complete-btn">Complete the Square!!</button>
+            <button id="solve-btn" class="parabola-btn">Auto Complete</button>
+            <button id="reset-btn" class="clear-btn">Reset</button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        // UI Elements
+        const bSlider = document.getElementById('b-slider');
+        const bValueSpan = document.getElementById('b-value');
+        const completeSqBtn = document.getElementById('complete-sq-btn');
+        const solveBtn = document.getElementById('solve-btn');
+        const resetBtn = document.getElementById('reset-btn');
+
+        // Geometry Parameters
+        const targetX = 35;
+        const targetY = 35;
+        const sizeX = 160;
+        const scaleFactor = 22;
+
+        let b = parseInt(bSlider.value);
+        let halfB = b / 2;
+        let sizeHalfB = halfB * scaleFactor;
+
+        let pieces = [];
+        let selectedPiece = null;
+        let dragMode = null; // 'translate' or 'rotate'
+        let dragOffset = { x: 0, y: 0 };
+        let rotateStartAngle = 0;
+        let initialPieceAngle = 0;
+        let isRedSquareSpawned = false;
+
+        function initApplet() {
+            b = parseInt(bSlider.value);
+            halfB = b / 2;
+            sizeHalfB = halfB * scaleFactor;
+            bValueSpan.textContent = b;
+            isRedSquareSpawned = false;
+
+            pieces = [
+                {
+                    id: 'x2',
+                    label: 'x²',
+                    w: sizeX,
+                    h: sizeX,
+                    x: 380,
+                    y: 110,
+                    angle: 0,
+                    color: '#d4e6f1',
+                    stroke: '#2980b9',
+                    textColor: '#1b4f72'
+                },
+                {
+                    id: 'rect1',
+                    label: `${halfB}x`,
+                    w: sizeX,
+                    h: sizeHalfB,
+                    x: 380,
+                    y: 240,
+                    angle: 0,
+                    color: '#d1f2eb',
+                    stroke: '#16a085',
+                    textColor: '#0e6251'
+                },
+                {
+                    id: 'rect2',
+                    label: `${halfB}x`,
+                    w: sizeX,
+                    h: sizeHalfB,
+                    x: 380,
+                    y: 340,
+                    angle: 0,
+                    color: '#d1f2eb',
+                    stroke: '#16a085',
+                    textColor: '#0e6251'
+                }
+            ];
+
+            selectedPiece = null;
+            dragMode = null;
+            draw();
+        }
+
+        function spawnRedSquare() {
+            const cornerLabel = `${halfB}² (${halfB * halfB})`;
+            if (!isRedSquareSpawned) {
+                isRedSquareSpawned = true;
+                pieces.push({
+                    id: 'corner',
+                    label: cornerLabel,
+                    w: sizeHalfB,
+                    h: sizeHalfB,
+                    x: 380,
+                    y: 430,
+                    angle: 0,
+                    color: '#fadbd8',
+                    stroke: '#c0392b',
+                    textColor: '#78281f'
+                });
+            } else {
+                const cornerPiece = pieces.find(p => p.id === 'corner');
+                if (cornerPiece) {
+                    cornerPiece.x = 380;
+                    cornerPiece.y = 430;
+                    cornerPiece.label = cornerLabel;
+                }
+            }
+            draw();
+        }
+
+        function getEffectiveDimensions(piece) {
+            const isRotated = Math.round(piece.angle / 90) % 2 !== 0;
+            return {
+                w: isRotated ? piece.h : piece.w,
+                h: isRotated ? piece.w : piece.h
+            };
+        }
+
+        function getRotateHandlePos(piece) {
+            const localX = piece.w / 2;
+            const localY = -piece.h / 2;
+            const rad = (piece.angle * Math.PI) / 180;
+            return {
+                x: piece.x + (localX * Math.cos(rad) - localY * Math.sin(rad)),
+                y: piece.y + (localX * Math.sin(rad) + localY * Math.cos(rad))
+            };
+        }
+
+        function getTargetSlots() {
+            return {
+                'top-left': { x: targetX + sizeX / 2, y: targetY + sizeX / 2, w: sizeX, h: sizeX },
+                'rect-bottom': { x: targetX + sizeX / 2, y: targetY + sizeX + sizeHalfB / 2, w: sizeX, h: sizeHalfB },
+                'rect-right': { x: targetX + sizeX + sizeHalfB / 2, y: targetY + sizeX / 2, w: sizeHalfB, h: sizeX },
+                'corner': { x: targetX + sizeX + sizeHalfB / 2, y: targetY + sizeX + sizeHalfB / 2, w: sizeHalfB, h: sizeHalfB }
+            };
+        }
+
+        function hitTestPiece(piece, mx, my) {
+            const dx = mx - piece.x;
+            const dy = my - piece.y;
+            const rad = (-piece.angle * Math.PI) / 180;
+            const lx = dx * Math.cos(rad) - dy * Math.sin(rad);
+            const ly = dx * Math.sin(rad) + dy * Math.cos(rad);
+            return Math.abs(lx) <= piece.w / 2 && Math.abs(ly) <= piece.h / 2;
+        }
+
+        function hitTestRotateHandle(piece, mx, my) {
+            const handle = getRotateHandlePos(piece);
+            return Math.hypot(mx - handle.x, my - handle.y) <= 14;
+        }
+
+        function checkSnap(piece) {
+            const slots = getTargetSlots();
+            const eff = getEffectiveDimensions(piece);
+            const snapThreshold = 35;
+
+            if (piece.id === 'x2') {
+                const slot = slots['top-left'];
+                if (Math.hypot(piece.x - slot.x, piece.y - slot.y) < snapThreshold) {
+                    piece.x = slot.x;
+                    piece.y = slot.y;
+                    piece.angle = 0;
+                }
+            } else if (piece.id === 'corner') {
+                const slot = slots['corner'];
+                if (Math.hypot(piece.x - slot.x, piece.y - slot.y) < snapThreshold) {
+                    piece.x = slot.x;
+                    piece.y = slot.y;
+                    piece.angle = 0;
+                }
+            } else if (piece.id.startsWith('rect')) {
+                const slotH = slots['rect-bottom'];
+                const slotV = slots['rect-right'];
+
+                if (Math.hypot(piece.x - slotH.x, piece.y - slotH.y) < snapThreshold &&
+                    Math.abs(eff.w - slotH.w) < 4 && Math.abs(eff.h - slotH.h) < 4) {
+                    piece.x = slotH.x;
+                    piece.y = slotH.y;
+                } else if (Math.hypot(piece.x - slotV.x, piece.y - slotV.y) < snapThreshold &&
+                           Math.abs(eff.w - slotV.w) < 4 && Math.abs(eff.h - slotV.h) < 4) {
+                    piece.x = slotV.x;
+                    piece.y = slotV.y;
+                }
+            }
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Target Placement Grid Outline
+            ctx.save();
+            ctx.strokeStyle = '#bdc3c7';
+            ctx.setLineDash([6, 6]);
+            ctx.lineWidth = 2;
+
+            ctx.strokeRect(targetX, targetY, sizeX, sizeX);
+            ctx.strokeRect(targetX + sizeX, targetY, sizeHalfB, sizeX);
+            ctx.strokeRect(targetX, targetY + sizeX, sizeX, sizeHalfB);
+            ctx.restore();
+
+            // Header Label
+            ctx.fillStyle = '#7f8c8d';
+            ctx.font = '13px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('Target Placement Grid', targetX + (sizeX + sizeHalfB) / 2, targetY - 12);
+
+            // Render Pieces
+            pieces.forEach(piece => {
+                ctx.save();
+                ctx.translate(piece.x, piece.y);
+                ctx.rotate((piece.angle * Math.PI) / 180);
+
+                // Body Fill & Stroke
+                ctx.fillStyle = piece.color;
+                ctx.fillRect(-piece.w / 2, -piece.h / 2, piece.w, piece.h);
+
+                ctx.strokeStyle = piece.stroke;
+                ctx.lineWidth = 2;
+                ctx.strokeRect(-piece.w / 2, -piece.h / 2, piece.w, piece.h);
+
+                // Highlighted Selection Border
+                if (piece === selectedPiece) {
+                    ctx.strokeStyle = '#e67e22';
+                    ctx.lineWidth = 3;
+                    ctx.strokeRect(-piece.w / 2 - 3, -piece.h / 2 - 3, piece.w + 6, piece.h + 6);
+                }
+                ctx.restore();
+
+                // Text Upright
+                ctx.save();
+                ctx.translate(piece.x, piece.y);
+                ctx.fillStyle = piece.textColor;
+                ctx.font = 'bold 15px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(piece.label, 0, 0);
+                ctx.restore();
+
+                // Corner Rotation Handle
+                const handlePos = getRotateHandlePos(piece);
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(handlePos.x, handlePos.y, 8, 0, 2 * Math.PI);
+                ctx.fillStyle = '#e67e22';
+                ctx.fill();
+                ctx.lineWidth = 2;
+                ctx.strokeStyle = '#ffffff';
+                ctx.stroke();
+
+                ctx.beginPath();
+                ctx.arc(handlePos.x, handlePos.y, 11, 0, 1.5 * Math.PI);
+                ctx.strokeStyle = '#e67e22';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                ctx.restore();
+            });
+        }
+
+        function getCanvasPos(e) {
+            const rect = canvas.getBoundingClientRect();
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            return {
+                x: clientX - rect.left,
+                y: clientY - rect.top
+            };
+        }
+
+        function handleStart(e) {
+            const pos = getCanvasPos(e);
+
+            for (let i = pieces.length - 1; i >= 0; i--) {
+                if (hitTestRotateHandle(pieces[i], pos.x, pos.y)) {
+                    selectedPiece = pieces[i];
+                    dragMode = 'rotate';
+                    
+                    const angleRad = Math.atan2(pos.y - selectedPiece.y, pos.x - selectedPiece.x);
+                    rotateStartAngle = angleRad * (180 / Math.PI);
+                    initialPieceAngle = selectedPiece.angle;
+
+                    pieces.splice(i, 1);
+                    pieces.push(selectedPiece);
+                    draw();
+                    return;
+                }
+            }
+
+            for (let i = pieces.length - 1; i >= 0; i--) {
+                if (hitTestPiece(pieces[i], pos.x, pos.y)) {
+                    selectedPiece = pieces[i];
+                    dragMode = 'translate';
+                    dragOffset.x = pos.x - selectedPiece.x;
+                    dragOffset.y = pos.y - selectedPiece.y;
+
+                    pieces.splice(i, 1);
+                    pieces.push(selectedPiece);
+                    draw();
+                    return;
+                }
+            }
+
+            selectedPiece = null;
+            dragMode = null;
+            draw();
+        }
+
+        function handleMove(e) {
+            if (!dragMode || !selectedPiece) return;
+            const pos = getCanvasPos(e);
+
+            if (dragMode === 'translate') {
+                selectedPiece.x = pos.x - dragOffset.x;
+                selectedPiece.y = pos.y - dragOffset.y;
+            } else if (dragMode === 'rotate') {
+                const currentAngleRad = Math.atan2(pos.y - selectedPiece.y, pos.x - selectedPiece.x);
+                const currentAngleDeg = currentAngleRad * (180 / Math.PI);
+                let newAngle = initialPieceAngle + (currentAngleDeg - rotateStartAngle);
+                selectedPiece.angle = (newAngle % 360 + 360) % 360;
+            }
+            draw();
+        }
+
+        function handleEnd() {
+            if (selectedPiece) {
+                if (dragMode === 'rotate') {
+                    selectedPiece.angle = Math.round(selectedPiece.angle / 90) * 90 % 360;
+                }
+                checkSnap(selectedPiece);
+            }
+            dragMode = null;
+            draw();
+        }
+
+        function autoSolve() {
+            if (!isRedSquareSpawned) {
+                spawnRedSquare();
+            }
+            const slots = getTargetSlots();
+
+            pieces[0].x = slots['top-left'].x;
+            pieces[0].y = slots['top-left'].y;
+            pieces[0].angle = 0;
+
+            pieces[1].x = slots['rect-bottom'].x;
+            pieces[1].y = slots['rect-bottom'].y;
+            pieces[1].angle = 0;
+
+            pieces[2].x = slots['rect-right'].x;
+            pieces[2].y = slots['rect-right'].y;
+            pieces[2].angle = 90;
+
+            const cornerPiece = pieces.find(p => p.id === 'corner');
+            if (cornerPiece) {
+                cornerPiece.x = slots['corner'].x;
+                cornerPiece.y = slots['corner'].y;
+                cornerPiece.angle = 0;
+            }
+
+            draw();
+        }
+
+        // Listeners
+        canvas.addEventListener('mousedown', handleStart);
+        canvas.addEventListener('mousemove', handleMove);
+        window.addEventListener('mouseup', handleEnd);
+
+        canvas.addEventListener('touchstart', (e) => { handleStart(e); e.preventDefault(); }, { passive: false });
+        canvas.addEventListener('touchmove', (e) => { handleMove(e); e.preventDefault(); }, { passive: false });
+        window.addEventListener('touchend', handleEnd);
+
+        completeSqBtn.addEventListener('click', spawnRedSquare);
+        bSlider.addEventListener('input', initApplet);
+        solveBtn.addEventListener('click', autoSolve);
+        resetBtn.addEventListener('click', initApplet);
+
+        initApplet();
+    </script>
+</body>
+</html>
