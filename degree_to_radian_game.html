@@ -1,0 +1,1008 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Radian & Degree Tug of War (3 Sig. Figs. MC)</title>
+  <style>
+    :root {
+      --blue: #2563eb;
+      --blue-dark: #1d4ed8;
+      --blue-light: #eff6ff;
+      --red: #dc2626;
+      --red-dark: #b91c1c;
+      --red-light: #fef2f2;
+      --slate: #0f172a;
+      --green: #16a34a;
+      --green-dark: #15803d;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    }
+
+    body {
+      background: #f1f5f9;
+      color: var(--slate);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+    }
+
+    /* Top Control Bar */
+    header {
+      background: var(--slate);
+      color: #fff;
+      padding: 10px 20px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+
+    .title-group h1 {
+      font-size: 1.25rem;
+      font-weight: 800;
+      letter-spacing: 0.3px;
+    }
+
+    .title-group .rule-badge {
+      display: inline-block;
+      background: #f59e0b;
+      color: #1e293b;
+      font-weight: 800;
+      font-size: 0.8rem;
+      padding: 2px 8px;
+      border-radius: 999px;
+      margin-top: 2px;
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .controls select, .controls button {
+      padding: 6px 12px;
+      border-radius: 6px;
+      border: none;
+      font-size: 0.88rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .controls select {
+      background: #334155;
+      color: #fff;
+    }
+
+    .btn-hint {
+      background: #0284c7;
+      color: #fff;
+    }
+
+    .btn-hint:hover { background: #0369a1; }
+
+    .btn-reset {
+      background: #e2e8f0;
+      color: var(--slate);
+    }
+
+    .btn-reset:hover { background: #cbd5e1; }
+
+    .formula-bar {
+      background: #fef3c7;
+      border-bottom: 2px solid #f59e0b;
+      color: #78350f;
+      text-align: center;
+      padding: 6px 12px;
+      font-weight: 700;
+      font-size: 0.95rem;
+      display: none;
+    }
+
+    .formula-bar.visible {
+      display: block;
+    }
+
+    /* Tug of War Arena */
+    .arena-wrapper {
+      background: linear-gradient(180deg, #bae6fd 0%, #e0f2fe 62%, #86efac 62%, #4ade80 100%);
+      border-bottom: 4px solid #166534;
+      padding: 8px 12px 4px;
+      position: relative;
+    }
+
+    .arena-status {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      max-width: 1100px;
+      margin: 0 auto 4px;
+      font-weight: 800;
+      font-size: 1rem;
+    }
+
+    .team-tag-blue {
+      color: var(--blue-dark);
+      background: rgba(255,255,255,0.88);
+      padding: 4px 12px;
+      border-radius: 999px;
+      border: 2px solid var(--blue);
+    }
+
+    .team-tag-red {
+      color: var(--red-dark);
+      background: rgba(255,255,255,0.88);
+      padding: 4px 12px;
+      border-radius: 999px;
+      border: 2px solid var(--red);
+    }
+
+    .step-indicator {
+      background: rgba(15, 23, 42, 0.85);
+      color: #fff;
+      padding: 4px 14px;
+      border-radius: 999px;
+      font-size: 0.9rem;
+    }
+
+    svg#tug-arena {
+      width: 100%;
+      max-width: 1100px;
+      height: 155px;
+      display: block;
+      margin: 0 auto;
+      overflow: visible;
+    }
+
+    #rope-assembly {
+      transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    /* Split Screen Play Area */
+    .play-area {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+      padding: 18px;
+      max-width: 1200px;
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    .team-panel {
+      background: #fff;
+      border-radius: 16px;
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+      border: 4px solid transparent;
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .team-panel.blue {
+      border-color: var(--blue);
+      background: linear-gradient(180deg, var(--blue-light) 0%, #ffffff 35%);
+    }
+
+    .team-panel.red {
+      border-color: var(--red);
+      background: linear-gradient(180deg, var(--red-light) 0%, #ffffff 35%);
+    }
+
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .panel-header h2 {
+      font-size: 1.35rem;
+      font-weight: 800;
+    }
+
+    .blue .panel-header h2 { color: var(--blue-dark); }
+    .red .panel-header h2 { color: var(--red-dark); }
+
+    .score-pill {
+      font-weight: 700;
+      font-size: 0.9rem;
+      padding: 4px 10px;
+      border-radius: 8px;
+      background: #f1f5f9;
+    }
+
+    .question-box {
+      background: #fff;
+      border: 2px solid #cbd5e1;
+      border-radius: 14px;
+      padding: 16px 14px;
+      text-align: center;
+      margin-bottom: 14px;
+      min-height: 104px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .question-type {
+      font-size: 0.82rem;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      font-weight: 700;
+      color: #64748b;
+      margin-bottom: 4px;
+    }
+
+    .question-text {
+      font-size: 1.65rem;
+      font-weight: 800;
+      color: var(--slate);
+    }
+
+    .question-sub {
+      font-size: 0.85rem;
+      color: #d97706;
+      font-weight: 700;
+      margin-top: 4px;
+    }
+
+    .feedback-banner {
+      height: 30px;
+      line-height: 30px;
+      text-align: center;
+      font-weight: 800;
+      font-size: 0.95rem;
+      border-radius: 8px;
+      margin-bottom: 12px;
+      visibility: hidden;
+    }
+
+    .feedback-banner.correct {
+      visibility: visible;
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    .feedback-banner.wrong {
+      visibility: visible;
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    /* 3-Option Multiple Choice Cards */
+    .mc-options {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .mc-btn {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      width: 100%;
+      padding: 15px 18px;
+      background: #f8fafc;
+      border: 3px solid #cbd5e1;
+      border-radius: 12px;
+      cursor: pointer;
+      text-align: left;
+      transition: transform 0.08s ease, background 0.12s ease, border-color 0.12s ease;
+    }
+
+    .blue .mc-btn:hover:not(:disabled) {
+      background: #eff6ff;
+      border-color: var(--blue);
+      transform: translateY(-1px);
+    }
+
+    .red .mc-btn:hover:not(:disabled) {
+      background: #fef2f2;
+      border-color: var(--red);
+      transform: translateY(-1px);
+    }
+
+    .mc-btn:active:not(:disabled) {
+      transform: scale(0.98);
+    }
+
+    .mc-letter {
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 900;
+      font-size: 1.15rem;
+      flex-shrink: 0;
+      color: #fff;
+    }
+
+    .blue .mc-letter { background: var(--blue); }
+    .red .mc-letter { background: var(--red); }
+
+    .mc-value {
+      font-size: 1.45rem;
+      font-weight: 800;
+      color: var(--slate);
+      flex: 1;
+    }
+
+    .mc-key-hint {
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: #94a3b8;
+      background: #e2e8f0;
+      padding: 2px 7px;
+      border-radius: 5px;
+    }
+
+    /* Feedback states on MC buttons */
+    .mc-btn.is-correct {
+      background: #dcfce7 !important;
+      border-color: var(--green) !important;
+    }
+
+    .mc-btn.is-correct .mc-letter {
+      background: var(--green) !important;
+    }
+
+    .mc-btn.is-wrong {
+      background: #fee2e2 !important;
+      border-color: #ef4444 !important;
+    }
+
+    .mc-btn.is-wrong .mc-letter {
+      background: #ef4444 !important;
+    }
+
+    .mc-btn:disabled {
+      cursor: not-allowed;
+      opacity: 0.85;
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      20% { transform: translateX(-8px); }
+      40% { transform: translateX(8px); }
+      60% { transform: translateX(-6px); }
+      80% { transform: translateX(6px); }
+    }
+
+    .shake {
+      animation: shake 0.35s ease;
+    }
+
+    /* Victory Modal */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.78);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      padding: 20px;
+    }
+
+    .modal-overlay.show {
+      display: flex;
+    }
+
+    .modal-card {
+      background: #fff;
+      border-radius: 20px;
+      padding: 32px 28px;
+      max-width: 460px;
+      width: 100%;
+      text-align: center;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+    }
+
+    .modal-trophy {
+      font-size: 4rem;
+      margin-bottom: 8px;
+    }
+
+    .modal-title {
+      font-size: 2rem;
+      font-weight: 900;
+      margin-bottom: 8px;
+    }
+
+    .modal-stats {
+      background: #f1f5f9;
+      border-radius: 12px;
+      padding: 14px;
+      margin: 16px 0 22px;
+      font-size: 1rem;
+      line-height: 1.6;
+    }
+
+    .modal-btn {
+      background: var(--green);
+      color: #fff;
+      border: none;
+      padding: 14px 28px;
+      font-size: 1.15rem;
+      font-weight: 800;
+      border-radius: 12px;
+      cursor: pointer;
+    }
+
+    .modal-btn:hover {
+      background: var(--green-dark);
+    }
+
+    @media (max-width: 768px) {
+      .play-area {
+        grid-template-columns: 1fr;
+      }
+      svg#tug-arena {
+        height: 120px;
+      }
+      .mc-key-hint {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="title-group">
+      <h1>Radian &harr; Degree Tug of War</h1>
+      <span class="rule-badge">MULTIPLE CHOICE &bull; CORRECT TO 3 SIGNIFICANT FIGURES</span>
+    </div>
+    <div class="controls">
+      <select id="mode-select" title="Conversion Direction">
+        <option value="mixed">Mode: Mixed (Deg &harr; Rad)</option>
+        <option value="deg2rad">Mode: Degrees &rarr; Radians</option>
+        <option value="rad2deg">Mode: Radians &rarr; Degrees</option>
+      </select>
+      <select id="steps-select" title="Pulls needed to reach Goal Line">
+        <option value="5" selected>Goal Distance: 5 Pulls</option>
+        <option value="7">Goal Distance: 7 Pulls</option>
+        <option value="10">Goal Distance: 10 Pulls</option>
+      </select>
+      <button class="btn-hint" id="toggle-hint">Formula Hint</button>
+      <button class="btn-reset" id="reset-btn">New Match</button>
+    </div>
+  </header>
+
+  <div class="formula-bar" id="formula-bar">
+    Radians = Degrees &times; (&pi; / 180) &nbsp;&nbsp;|&nbsp;&nbsp; Degrees = Radians &times; (180 / &pi;) &nbsp;&nbsp;|&nbsp;&nbsp; Round to 3 s.f.
+  </div>
+
+  <!-- Tug of War Visual Arena -->
+  <section class="arena-wrapper">
+    <div class="arena-status">
+      <span class="team-tag-blue">&larr; BLUE GOAL LINE</span>
+      <span class="step-indicator" id="position-text">Flag Position: Center (0 / 5)</span>
+      <span class="team-tag-red">RED GOAL LINE &rarr;</span>
+    </div>
+
+    <svg id="tug-arena" viewBox="0 0 1000 155">
+      <!-- Ground & Center Pit -->
+      <rect x="0" y="122" width="1000" height="33" fill="#22c55e" />
+      <ellipse cx="500" cy="128" rx="42" ry="9" fill="#78350f" />
+
+      <!-- Blue Goal Line at x=220 -->
+      <line x1="220" y1="20" x2="220" y2="145" stroke="#1d4ed8" stroke-width="5" stroke-dasharray="10,6" />
+      <rect x="165" y="10" width="110" height="22" rx="6" fill="#1d4ed8" />
+      <text x="220" y="25" fill="#fff" font-size="12" font-weight="bold" text-anchor="middle">BLUE GOAL</text>
+
+      <!-- Center Line at x=500 -->
+      <line x1="500" y1="30" x2="500" y2="145" stroke="#ffffff" stroke-width="3" stroke-dasharray="6,6" />
+
+      <!-- Red Goal Line at x=780 -->
+      <line x1="780" y1="20" x2="780" y2="145" stroke="#b91c1c" stroke-width="5" stroke-dasharray="10,6" />
+      <rect x="725" y="10" width="110" height="22" rx="6" fill="#b91c1c" />
+      <text x="780" y="25" fill="#fff" font-size="12" font-weight="bold" text-anchor="middle">RED GOAL</text>
+
+      <!-- Moving Rope, Flag, and Pullers -->
+      <g id="rope-assembly">
+        <line x1="80" y1="92" x2="920" y2="92" stroke="#b45309" stroke-width="8" stroke-linecap="round" />
+        <line x1="80" y1="92" x2="920" y2="92" stroke="#f59e0b" stroke-width="3" stroke-dasharray="8,8" />
+
+        <!-- Team Blue Pullers (Left) -->
+        <g transform="translate(130, 52)">
+          <circle cx="20" cy="14" r="12" fill="#2563eb" />
+          <path d="M8,66 L20,28 L34,66" stroke="#1d4ed8" stroke-width="8" fill="none" stroke-linecap="round"/>
+          <line x1="20" y1="38" x2="45" y2="40" stroke="#2563eb" stroke-width="7" stroke-linecap="round"/>
+        </g>
+        <g transform="translate(185, 52)">
+          <circle cx="20" cy="14" r="12" fill="#2563eb" />
+          <path d="M8,66 L20,28 L34,66" stroke="#1d4ed8" stroke-width="8" fill="none" stroke-linecap="round"/>
+          <line x1="20" y1="38" x2="45" y2="40" stroke="#2563eb" stroke-width="7" stroke-linecap="round"/>
+        </g>
+
+        <!-- Team Red Pullers (Right) -->
+        <g transform="translate(775, 52)">
+          <circle cx="20" cy="14" r="12" fill="#dc2626" />
+          <path d="M6,66 L20,28 L32,66" stroke="#b91c1c" stroke-width="8" fill="none" stroke-linecap="round"/>
+          <line x1="20" y1="38" x2="-5" y2="40" stroke="#dc2626" stroke-width="7" stroke-linecap="round"/>
+        </g>
+        <g transform="translate(830, 52)">
+          <circle cx="20" cy="14" r="12" fill="#dc2626" />
+          <path d="M6,66 L20,28 L32,66" stroke="#b91c1c" stroke-width="8" fill="none" stroke-linecap="round"/>
+          <line x1="20" y1="38" x2="-5" y2="40" stroke="#dc2626" stroke-width="7" stroke-linecap="round"/>
+        </g>
+
+        <!-- Center Flag Marker -->
+        <g id="center-flag" transform="translate(500, 92)">
+          <line x1="0" y1="-38" x2="0" y2="22" stroke="#0f172a" stroke-width="4" />
+          <polygon points="0,-38 36,-24 0,-10" fill="#facc15" stroke="#ca8a04" stroke-width="2" />
+          <circle cx="0" cy="0" r="6" fill="#ef4444" />
+        </g>
+      </g>
+    </svg>
+  </section>
+
+  <!-- Two Separate Team Multiple Choice Panels -->
+  <main class="play-area">
+    <!-- TEAM BLUE PANEL -->
+    <div class="team-panel blue" id="panel-blue">
+      <div>
+        <div class="panel-header">
+          <h2>TEAM BLUE</h2>
+          <span class="score-pill" id="score-blue">Correct: 0</span>
+        </div>
+
+        <div class="question-box">
+          <div class="question-type" id="qtype-blue">Degrees to Radians</div>
+          <div class="question-text" id="qtext-blue">Loading...</div>
+          <div class="question-sub">Pick the answer rounded to 3 significant figures</div>
+        </div>
+
+        <div class="feedback-banner" id="fb-blue"></div>
+      </div>
+
+      <div class="mc-options" id="options-blue">
+        <button class="mc-btn" data-team="blue" data-index="0">
+          <span class="mc-letter">A</span>
+          <span class="mc-value" id="blue-opt-0">--</span>
+          <span class="mc-key-hint">Key 1</span>
+        </button>
+        <button class="mc-btn" data-team="blue" data-index="1">
+          <span class="mc-letter">B</span>
+          <span class="mc-value" id="blue-opt-1">--</span>
+          <span class="mc-key-hint">Key 2</span>
+        </button>
+        <button class="mc-btn" data-team="blue" data-index="2">
+          <span class="mc-letter">C</span>
+          <span class="mc-value" id="blue-opt-2">--</span>
+          <span class="mc-key-hint">Key 3</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- TEAM RED PANEL -->
+    <div class="team-panel red" id="panel-red">
+      <div>
+        <div class="panel-header">
+          <h2>TEAM RED</h2>
+          <span class="score-pill" id="score-red">Correct: 0</span>
+        </div>
+
+        <div class="question-box">
+          <div class="question-type" id="qtype-red">Radians to Degrees</div>
+          <div class="question-text" id="qtext-red">Loading...</div>
+          <div class="question-sub">Pick the answer rounded to 3 significant figures</div>
+        </div>
+
+        <div class="feedback-banner" id="fb-red"></div>
+      </div>
+
+      <div class="mc-options" id="options-red">
+        <button class="mc-btn" data-team="red" data-index="0">
+          <span class="mc-letter">A</span>
+          <span class="mc-value" id="red-opt-0">--</span>
+          <span class="mc-key-hint">Key 8</span>
+        </button>
+        <button class="mc-btn" data-team="red" data-index="1">
+          <span class="mc-letter">B</span>
+          <span class="mc-value" id="red-opt-1">--</span>
+          <span class="mc-key-hint">Key 9</span>
+        </button>
+        <button class="mc-btn" data-team="red" data-index="2">
+          <span class="mc-letter">C</span>
+          <span class="mc-value" id="red-opt-2">--</span>
+          <span class="mc-key-hint">Key 0</span>
+        </button>
+      </div>
+    </div>
+  </main>
+
+  <!-- Victory Modal -->
+  <div class="modal-overlay" id="victory-modal">
+    <div class="modal-card">
+      <div class="modal-trophy">&#127942;</div>
+      <div class="modal-title" id="winner-title">TEAM BLUE WINS!</div>
+      <p id="winner-subtitle">The flag crossed the goal line!</p>
+      <div class="modal-stats" id="winner-stats"></div>
+      <button class="modal-btn" id="play-again-btn">Play Again</button>
+    </div>
+  </div>
+
+  <script>
+    // --- Sound Effects (Built-in Web Audio API) ---
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    function playTone(freq, type, duration, delay = 0) {
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = type;
+      osc.frequency.setValueAtTime(freq, audioCtx.currentTime + delay);
+      gain.gain.setValueAtTime(0.15, audioCtx.currentTime + delay);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + delay + duration);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start(audioCtx.currentTime + delay);
+      osc.stop(audioCtx.currentTime + delay + duration);
+    }
+
+    function playCorrectSound() {
+      playTone(523.25, 'triangle', 0.14, 0);
+      playTone(659.25, 'triangle', 0.18, 0.09);
+    }
+
+    function playWrongSound() {
+      playTone(190, 'sawtooth', 0.25, 0);
+    }
+
+    function playWinSound() {
+      [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => {
+        playTone(f, 'triangle', 0.25, i * 0.12);
+      });
+    }
+
+    // --- Significant Figures Helpers ---
+    function roundToSF(num, sf) {
+      if (num === 0) return "0";
+      const d = Math.ceil(Math.log10(Math.abs(num)));
+      const power = sf - d;
+      const magnitude = Math.pow(10, power);
+      const rounded = Math.round(num * magnitude) / magnitude;
+      return power > 0 ? rounded.toFixed(power) : String(Math.round(rounded));
+    }
+
+    function roundTo3SF(num) {
+      return roundToSF(num, 3);
+    }
+
+    function isAmbiguousBoundary(num) {
+      const d = Math.ceil(Math.log10(Math.abs(num)));
+      const shifted = num * Math.pow(10, 3 - d);
+      const frac = Math.abs(shifted - Math.floor(shifted) - 0.5);
+      return frac < 0.02;
+    }
+
+    function shuffleArray(arr) {
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr;
+    }
+
+    // Build 3 unique MC options with realistic math distractors
+    function buildOptions(exactValue, distractorNumbers, unitSuffix) {
+      const correctStr = roundTo3SF(exactValue);
+      const seen = new Set([correctStr]);
+      const finalValues = [correctStr];
+
+      // Shuffle realistic formula/rounding distractors
+      shuffleArray(distractorNumbers);
+      for (const val of distractorNumbers) {
+        if (val > 0 && isFinite(val)) {
+          const formatted = roundTo3SF(val);
+          if (!seen.has(formatted)) {
+            seen.add(formatted);
+            finalValues.push(formatted);
+          }
+        }
+        if (finalValues.length === 3) break;
+      }
+
+      // Fallback multipliers if any distractors collided
+      const fallbacks = [1.14, 0.86, 1.26, 0.74, 1.35];
+      for (const mult of fallbacks) {
+        if (finalValues.length === 3) break;
+        const formatted = roundTo3SF(exactValue * mult);
+        if (!seen.has(formatted)) {
+          seen.add(formatted);
+          finalValues.push(formatted);
+        }
+      }
+
+      const choices = finalValues.map(valStr => ({
+        label: `${valStr}${unitSuffix}`,
+        isCorrect: valStr === correctStr
+      }));
+
+      return shuffleArray(choices);
+    }
+
+    // --- Independent Question Generator ---
+    function generateQuestion(mode) {
+      let direction = mode;
+      if (mode === 'mixed') {
+        direction = Math.random() < 0.5 ? 'deg2rad' : 'rad2deg';
+      }
+
+      if (direction === 'deg2rad') {
+        let deg, exactRad;
+        do {
+          deg = Math.floor(Math.random() * 344) + 12;
+          if (deg % 90 === 0) deg += 7;
+          exactRad = deg * (Math.PI / 180);
+        } while (isAmbiguousBoundary(exactRad));
+
+        // Plausible student mistakes for Deg -> Rad:
+        // 1. Dividing by 180 but forgetting pi
+        // 2. Using 360 instead of 180
+        // 3. Using supplementary angle (180 - deg) or +/-12% error
+        const distractors = [
+          deg / 180,
+          deg * (Math.PI / 360),
+          exactRad * 1.13,
+          exactRad * 0.87
+        ];
+
+        return {
+          typeLabel: 'Degrees \u2192 Radians',
+          prompt: `Convert ${deg}\u00B0 to radians`,
+          choices: buildOptions(exactRad, distractors, ' rad')
+        };
+      } else {
+        const usePiFraction = Math.random() < 0.45;
+        let promptStr, exactDeg, rawRadValue;
+
+        if (usePiFraction) {
+          const denoms = [7, 8, 9, 11, 12, 13, 14, 15, 16];
+          let num, den;
+          do {
+            den = denoms[Math.floor(Math.random() * denoms.length)];
+            num = Math.floor(Math.random() * (den * 2 - 1)) + 1;
+            if (num % den === 0) num += 1;
+            rawRadValue = (num / den) * Math.PI;
+            exactDeg = (num / den) * 180;
+          } while (isAmbiguousBoundary(exactDeg));
+
+          promptStr = num === 1
+            ? `Convert \u03C0/${den} rad to degrees`
+            : `Convert ${num}\u03C0/${den} rad to degrees`;
+        } else {
+          do {
+            rawRadValue = Math.round((Math.random() * 5.9 + 0.25) * 100) / 100;
+            exactDeg = rawRadValue * (180 / Math.PI);
+          } while (isAmbiguousBoundary(exactDeg));
+
+          promptStr = `Convert ${rawRadValue} rad to degrees`;
+        }
+
+        // Plausible student mistakes for Rad -> Deg:
+        // 1. Multiplying by 360/pi instead of 180/pi
+        // 2. Multiplying by 90/pi instead of 180/pi
+        // 3. Multiplying by 180 without dividing by pi
+        const distractors = [
+          rawRadValue * (360 / Math.PI),
+          rawRadValue * (90 / Math.PI),
+          rawRadValue * 180,
+          exactDeg * 1.14
+        ];
+
+        return {
+          typeLabel: 'Radians \u2192 Degrees',
+          prompt: promptStr,
+          choices: buildOptions(exactDeg, distractors, '\u00B0')
+        };
+      }
+    }
+
+    // --- Game State ---
+    const state = {
+      flagPos: 0, // Negative = Blue side, Positive = Red side
+      stepsToWin: 5,
+      mode: 'mixed',
+      gameOver: false,
+      teams: {
+        blue: { correct: 0, attempts: 0, locked: false, question: null },
+        red: { correct: 0, attempts: 0, locked: false, question: null }
+      }
+    };
+
+    const MAX_SVG_SHIFT = 280;
+
+    function updateArenaVisuals() {
+      const shiftPerStep = MAX_SVG_SHIFT / state.stepsToWin;
+      const translateX = state.flagPos * shiftPerStep;
+      document.getElementById('rope-assembly').setAttribute('transform', `translate(${translateX}, 0)`);
+
+      const posText = document.getElementById('position-text');
+      if (state.flagPos === 0) {
+        posText.textContent = `Flag Position: Center (0 / ${state.stepsToWin})`;
+      } else if (state.flagPos < 0) {
+        posText.textContent = `Blue Leads by ${Math.abs(state.flagPos)} / ${state.stepsToWin}`;
+      } else {
+        posText.textContent = `Red Leads by ${state.flagPos} / ${state.stepsToWin}`;
+      }
+    }
+
+    function loadNewQuestion(team) {
+      const q = generateQuestion(state.mode);
+      state.teams[team].question = q;
+      state.teams[team].locked = false;
+
+      document.getElementById(`qtype-${team}`).textContent = q.typeLabel;
+      document.getElementById(`qtext-${team}`).textContent = q.prompt;
+
+      const buttons = document.querySelectorAll(`#options-${team} .mc-btn`);
+      buttons.forEach((btn, idx) => {
+        btn.disabled = false;
+        btn.classList.remove('is-correct', 'is-wrong');
+        document.getElementById(`${team}-opt-${idx}`).textContent = q.choices[idx].label;
+      });
+
+      const fb = document.getElementById(`fb-${team}`);
+      fb.className = 'feedback-banner';
+      fb.textContent = '';
+    }
+
+    function handleChoice(team, choiceIndex) {
+      const tState = state.teams[team];
+      if (state.gameOver || tState.locked) return;
+
+      tState.locked = true;
+      tState.attempts++;
+
+      const buttons = document.querySelectorAll(`#options-${team} .mc-btn`);
+      buttons.forEach(btn => (btn.disabled = true));
+
+      const chosen = tState.question.choices[choiceIndex];
+      const fb = document.getElementById(`fb-${team}`);
+      const panel = document.getElementById(`panel-${team}`);
+
+      if (chosen.isCorrect) {
+        // CORRECT ANSWER
+        playCorrectSound();
+        buttons[choiceIndex].classList.add('is-correct');
+
+        tState.correct++;
+        document.getElementById(`score-${team}`).textContent = `Correct: ${tState.correct}`;
+
+        fb.textContent = 'CORRECT! Pulling the rope!';
+        fb.className = 'feedback-banner correct';
+
+        state.flagPos += (team === 'blue' ? -1 : 1);
+        updateArenaVisuals();
+
+        if (Math.abs(state.flagPos) >= state.stepsToWin) {
+          endGame(team);
+          return;
+        }
+
+        setTimeout(() => {
+          if (!state.gameOver) loadNewQuestion(team);
+        }, 550);
+
+      } else {
+        // WRONG ANSWER -> Flag stays put + brief cooldown penalty
+        playWrongSound();
+        buttons[choiceIndex].classList.add('is-wrong');
+
+        // Highlight the true answer so students learn from it
+        tState.question.choices.forEach((c, idx) => {
+          if (c.isCorrect) buttons[idx].classList.add('is-correct');
+        });
+
+        panel.classList.remove('shake');
+        void panel.offsetWidth;
+        panel.classList.add('shake');
+
+        fb.textContent = 'Wrong! No pull — wait 1.4s...';
+        fb.className = 'feedback-banner wrong';
+
+        setTimeout(() => {
+          if (!state.gameOver) loadNewQuestion(team);
+        }, 1400);
+      }
+    }
+
+    function endGame(winnerTeam) {
+      state.gameOver = true;
+      playWinSound();
+
+      const modal = document.getElementById('victory-modal');
+      const title = document.getElementById('winner-title');
+      const stats = document.getElementById('winner-stats');
+
+      if (winnerTeam === 'blue') {
+        title.textContent = 'TEAM BLUE WINS!';
+        title.style.color = '#1d4ed8';
+      } else {
+        title.textContent = 'TEAM RED WINS!';
+        title.style.color = '#b91c1c';
+      }
+
+      const b = state.teams.blue;
+      const r = state.teams.red;
+      stats.innerHTML = `
+        <strong>Team Blue:</strong> ${b.correct} / ${b.attempts} correct<br>
+        <strong>Team Red:</strong> ${r.correct} / ${r.attempts} correct
+      `;
+
+      setTimeout(() => {
+        modal.classList.add('show');
+      }, 450);
+    }
+
+    function resetGame() {
+      state.flagPos = 0;
+      state.stepsToWin = parseInt(document.getElementById('steps-select').value, 10);
+      state.mode = document.getElementById('mode-select').value;
+      state.gameOver = false;
+
+      state.teams.blue = { correct: 0, attempts: 0, locked: false, question: null };
+      state.teams.red = { correct: 0, attempts: 0, locked: false, question: null };
+
+      document.getElementById('score-blue').textContent = 'Correct: 0';
+      document.getElementById('score-red').textContent = 'Correct: 0';
+      document.getElementById('victory-modal').classList.remove('show');
+
+      updateArenaVisuals();
+      loadNewQuestion('blue');
+      loadNewQuestion('red');
+    }
+
+    // --- Event Listeners ---
+    document.querySelectorAll('.mc-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const team = btn.getAttribute('data-team');
+        const idx = parseInt(btn.getAttribute('data-index'), 10);
+        handleChoice(team, idx);
+      });
+    });
+
+    // Keyboard shortcuts (1/2/3 for Blue, 8/9/0 for Red)
+    document.addEventListener('keydown', (e) => {
+      if (state.gameOver) return;
+      if (e.key === '1') handleChoice('blue', 0);
+      else if (e.key === '2') handleChoice('blue', 1);
+      else if (e.key === '3') handleChoice('blue', 2);
+      else if (e.key === '8') handleChoice('red', 0);
+      else if (e.key === '9') handleChoice('red', 1);
+      else if (e.key === '0') handleChoice('red', 2);
+    });
+
+    document.getElementById('toggle-hint').addEventListener('click', () => {
+      document.getElementById('formula-bar').classList.toggle('visible');
+    });
+
+    document.getElementById('reset-btn').addEventListener('click', resetGame);
+    document.getElementById('play-again-btn').addEventListener('click', resetGame);
+    document.getElementById('mode-select').addEventListener('change', resetGame);
+    document.getElementById('steps-select').addEventListener('change', resetGame);
+
+    // Start initial match
+    resetGame();
+  </script>
+</body>
+</html>
